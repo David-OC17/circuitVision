@@ -1,9 +1,13 @@
+#include <string>
+#include <vector>
+
 #include <opencv2/opencv.hpp>
 #include <opencv2/imgproc.hpp>
 
 ////////////////////////////////////////////////////////////////////////////////
-///                             Preprocessing                                ///
+///                                 Deskew                                   ///
 ////////////////////////////////////////////////////////////////////////////////
+
 float getSkewAngle(cv::Mat cvImage) {
     // Prep image, copy, convert to gray scale, blur, and threshold
     cv::Mat newImage = cvImage.clone();
@@ -56,3 +60,8 @@ cv::Mat deskew(cv::Mat cvImage) {
     float angle = getSkewAngle(cvImage);
     return rotateImage(cvImage, -1.0 * angle);
 }
+
+////////////////////////////////////////////////////////////////////////////////
+///                               Homography                                 ///
+////////////////////////////////////////////////////////////////////////////////
+

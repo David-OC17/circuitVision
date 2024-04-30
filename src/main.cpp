@@ -21,18 +21,19 @@ int main(){
 	}
 
   // Import image and create gray copy
-  cv::Mat ref_img_RGB = cv::imread("../imgs/reference/ELYOS_PCB_0.jpg");
+  //cv::Mat ref_img_RGB = cv::imread("../imgs/reference/ELYOS_PCB_0.jpg");
 
   // Deskew image
-  cv::Mat ref_img_rotated = deskew(ref_img_RGB);
+  //cv::Mat ref_img_rotated = deskew(ref_img_RGB);
   
   // Show output images
-  cv::imshow("Original image", ref_img_RGB);
-  cv::waitKey(0);
-  cv::imshow("Rotated image", ref_img_rotated);
-  cv::waitKey(0);
-  cv::destroyAllWindows();
+  //cv::imshow("Original image", ref_img_RGB);
+  //cv::waitKey(0);
+  //cv::imshow("Rotated image", ref_img_rotated);
+  //cv::waitKey(0);
+  //cv::destroyAllWindows();
   
+  homographyCorrection("../imgs/reference/ELYOS_PCB_1.png", "../test/test_homography.png");
 
 return EXIT_SUCCESS;		
 }
