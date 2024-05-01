@@ -7,7 +7,6 @@
 #include "../include/csv.hpp"
 #include "../include/PCB_inspection.hpp"
 
-// g++ -I/usr/include/opencv4 main.cpp -o main -L/usr/local/lib -lopencv_core -lopencv_imgcodecs -lopencv_imgproc -lopencv_highgui
 
 int main(){
 // Read CSV file with componet positions
@@ -22,17 +21,18 @@ int main(){
 
   // Import image and create gray copy
   cv::Mat ref_img_RGB = cv::imread("../imgs/reference/ELYOS_PCB_0.jpg");
+  cv::Mat eval_img_RGB = cv::imread("../imgs/evaluate/ELYOS_PCB_16.jpg");
 
-  // Deskew image
-  cv::Mat ref_img_rotated = deskew(ref_img_RGB);
+  // Preprocess reference and evaluate image
+  cv::Mat p_ref_img = preprocessImg(ref_img_RGB);
+  cv::Mat p_eval_img = preprocessImg(eval_img_RGB); 
   
-  // Show output images
-  cv::imshow("Original image", ref_img_RGB);
+  // Show original and preprocessed reference image 
+  cv::imshow("Original reference image", ref_img_RGB);
   cv::waitKey(0);
-  cv::imshow("Rotated image", ref_img_rotated);
+  cv::imshow("Preprocessed reference image", p_ref_img);
   cv::waitKey(0);
   cv::destroyAllWindows();
-  
 
-return EXIT_SUCCESS;		
+  return EXIT_SUCCESS;		
 }

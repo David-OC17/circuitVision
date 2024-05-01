@@ -2,8 +2,14 @@
 #include <opencv2/imgproc.hpp>
 
 
-float getSkewAngle(cv::Mat cvImage);
+////////////////////////////////////////////////////////////////////////////////
+///                             Preprocessing                                ///
+////////////////////////////////////////////////////////////////////////////////
 
-cv::Mat rotateImage(cv::Mat cvImage, float angle);
+// Preprocess image: apply Gaussian blur, convert to grayscale, apply
+// thresholding, image morphology, and convert to binary image.
+cv::Mat preprocessImg(cv::Mat inputImg);
 
-cv::Mat deskew(cv::Mat cvImage);
+// Correct perspective: get the perspective transform corresponding to 
+// the image and warp the perspective for a flat PCB.
+cv::Mat correctPerspective(cv::Mat inputImg);
