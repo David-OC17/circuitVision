@@ -11,10 +11,12 @@ LDFLAGS = -L/usr/local/lib -lopencv_core -lopencv_imgcodecs -lopencv_imgproc -lo
 
 # Source file
 SRCS = src/main.cpp src/PCB_inspection.cpp
+SRCS_TEST1= test/contour_finder_test.cpp src/PCB_inspection.cpp
 OBJS = $(SRCS:.cpp=.o)
 
 # Executable output
 EXEC = ./bin/main
+TEST1 = ./bin/contour_finder_test
 
 # Default target
 all: $(EXEC)
@@ -23,6 +25,10 @@ all: $(EXEC)
 $(EXEC): $(SRCS)
 	$(CXX) $(CXXFLAGS) $^ -o $@ $(LDFLAGS)
 
+# Build individual tests
+contourFinderTest: $(SRCS_TEST1)
+	$(CXX) $(CXXFLAGS) $^ -o $(TEST1) $(LDFLAGS)
+
 # Clean target
 clean:
-	rm -f $(EXEC)
+	rm -f $(EXEC) $(TEST1)

@@ -47,35 +47,6 @@ cv::Mat correctPerspective(cv::Mat inputImg){
   return finalImg;
 }
 
-// Find which of the provided contours corresponds to the PCB outline
-int getMaxAreaContourId(std::vector<std::vector<cv::Point>> contours) {
-    double maxArea = 0;
-    int maxAreaContourId = -1;
-    for (int j = 0; j < contours.size(); j++) {
-        double newArea = cv::contourArea(contours.at(j));
-        if (newArea > maxArea) {
-            maxArea = newArea;
-            maxAreaContourId = j;
-        }
-    }
-    return maxAreaContourId;
-} 
-
-// Receive RGB image as input, get position of the edges of the PCB board as output
-std::vector<cv::Point> findPCBcountours(cv::Mat inputImg) {
-  // Find edges of the image
-  cv::Mat inputImg_BLUR, inputImg_GRAY, inputImg_EDGES;
-
-  std::vector<std::vector<cv::Point>> contours;
-  std::vector<cv::Vec4i> hierarchy;
- 
-  // Find contour and biggest contour amongst them 
-  cv::findContours(inputImg_EDGES, contours, hierarchy, cv::RETR_LIST, cv::CHAIN_APPROX_NONE);
-  std::vector<cv::Point> largestContour = contours.at(getMaxAreaContourId(contours)); // Find biggest contour
-  
-  return largestContour;
-}
-
  
 ////////////////////////////////////////////////////////////////////////////////
 ///                           Auxiliary functions                            ///

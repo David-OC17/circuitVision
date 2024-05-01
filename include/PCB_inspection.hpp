@@ -15,12 +15,6 @@ cv::Mat preprocessImg(cv::Mat inputImg);
 // the image and warp the perspective for a flat PCB.
 cv::Mat correctPerspective(cv::Mat inputImg);
 
-// Find which of the provided contours corresponds to the PCB outline
-int getMaxAreaContourId(std::vector<std::vector<cv::Point>> contours);
-
-// Receive RGB image as input, get position of the edges of the PCB board as output
-std::vector<cv::Point> findPCBcountours(cv::Mat inputImg); 
-
 
 ////////////////////////////////////////////////////////////////////////////////
 ///                           Auxiliary functions                            ///
