@@ -47,7 +47,44 @@ cv::Mat correctPerspective(cv::Mat inputImg){
   return finalImg;
 }
 
+////////////////////////////////////////////////////////////////////////////////
+///                             Fault finding                                ///
+////////////////////////////////////////////////////////////////////////////////
  
+void display_img(cv::Mat &original_img, cv::Mat &preprocessed_img, bool resize, int width, int height){
+  // Resize if needed
+  if (resize){
+    cv::Mat display_original_img;
+    cv::resize(original_img, display_original_img, cv::Size(width, height), 0, 0, cv::INTER_LINEAR);
+
+    cv::Mat display_preprocessed_img;
+    cv::resize(preprocessed_img, display_preprocessed_img, cv::Size(width, height), 0, 0, cv::INTER_LINEAR);
+
+    cv::imshow("Original image", display_original_img);
+    cv::waitKey(0);
+    cv::imshow("Preprocessed image", display_preprocessed_img);
+    cv::waitKey(0);
+
+  } else{
+    cv::imshow("Original image", original_img);
+    cv::waitKey(0);
+    cv::imshow("Preprocessed image", preprocessed_img);
+    cv::waitKey(0);
+  }
+}
+
+void noise_removal(cv::Mat &XOR_img, int closure_iterations, int ind_operation_iterations){
+  cv::Mat closure_kernel = cv::getStructuringElement(cv::MORPH_RECT, cv::Size(3, 3));
+  cv::Mat XOR_eroded_img;
+  cv::Mat XOR_dialated_img;
+
+  // Apply closure via erossion and dilation
+  cv::erode(XOR_img, XOR_eroded_img, closure_kernel, cv::Point(-1, -1), ind_operation_iterations);
+  cv::dilate(XOR_eroded_img, XOR_dialated_img, closure_kernel, cv::Point(-1, -1), ind_operation_iterations);
+
+  XOR_img = XOR_dialated_img;
+}
+
 ////////////////////////////////////////////////////////////////////////////////
 ///                           Auxiliary functions                            ///
 ////////////////////////////////////////////////////////////////////////////////

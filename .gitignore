@@ -1,3 +1,6 @@
+# Bin from project
+/bin
+
 # Prerequisites
 *.d
 
