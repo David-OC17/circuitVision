@@ -1,9 +1,11 @@
 #include <vector>
+#include <iostream>
 
 #include <opencv2/opencv.hpp>
 #include <opencv2/imgproc.hpp>
 
 #include "../include/PCB_inspection.hpp"
+#include "../include/aux_functions.hpp"
 
 ////////////////////////////////////////////////////////////////////////////////
 ///                             Preprocessing                                ///
@@ -29,17 +31,28 @@ cv::Mat preprocessImg(cv::Mat inputImg){
   return finalImg;
 }
 
-cv::Mat correctPerspective(cv::Mat inputImg){
-  // MISSING: Find contours and provide desired countours.
-  
-  // Get the transformation to adjust image to almost fullscreen and without perspective
-  // cv::getPerspectiveTransform(); 
+cv::Mat correctPerspective(cv::Mat inputImg, std::vector<cv::Point> corners, int width, int height){
+  // Cast points
+  std::vector<cv::Point2f> srcCorners = {static_cast<cv::Point2f>(corners[0]), static_cast<cv::Point2f>(corners[1]), static_cast<cv::Point2f>(corners[2]), static_cast<cv::Point2f>(corners[3])};
 
-  cv::Mat finalImg;
-  cv::Size img_size = inputImg.size();
-  // cv::warpPerspective(inputImg, finalImg, perspectiveTransform, img_size);
+  // Destination corner
+  std::vector<cv::Point2f> destCorners = {
+    cv::Point2f(0,0),
+    cv::Point2f(width - 1, 0),
+    cv::Point2f(width - 1, height - 1),
+    cv::Point2f(0, height - 1)
+  };
 
-  return finalImg;
+  // Calculate transform from set of given corners to window corners (fit to all the window)
+  cv::Mat imgTransform; 
+  cv::getPerspectiveTransform(srcCorners, destCorners); 
+
+  // Apply the transformation
+  cv::Mat noPersp;
+  cv::Size img_size(width, height);
+  // cv::warpPerspective(inputImg, noPersp, imgTransform, img_size);
+
+  return inputImg;
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -58,6 +71,82 @@ void noise_removal(cv::Mat &XOR_img, int closure_iterations, int ind_operation_i
   XOR_img = XOR_dialated_img;
 }
 
+std::vector<cv::Point> findLargestContour(cv::Mat inputImg){
+    // Detect the contours in the image
+    std::vector<std::vector<cv::Point>> contours;
+    std::vector<cv::Vec4i> hierarchy;
+    cv::findContours(inputImg, contours, hierarchy, cv::RETR_TREE, cv::CHAIN_APPROX_SIMPLE);
+
+    // Find the largest contour
+    int largestArea = 0;
+    int largestContourIndex = -1;
+    for (int i = 0; i < contours.size(); i++) {
+        double area = cv::contourArea(contours[i]);
+        if (area > largestArea) {
+            largestArea = area;
+            largestContourIndex = i;
+        }
+    }
+
+    // Approximate the largest contour to a polygon
+    std::vector<cv::Point> approx;
+    cv::approxPolyDP(contours[largestContourIndex], approx, 0.01 * cv::arcLength(contours[largestContourIndex], true), true);
+
+    // Check if the polygon has 4 vertices and a sufficiently large area
+    if (approx.size() == 4 && largestArea > 1000) {
+      // Give the coordinates of the corners of the largest rectangle
+      std::cout << approx[0] << "\n";
+      std::cout << approx[1] << "\n";
+      std::cout << approx[2] << "\n";
+      std::cout << approx[3] << "\n";
+
+      return approx;
+
+    }
+
+    std::cout << "No large rectangle found in the image." << std::endl;
+    std::vector<cv::Point> emptyRet;
+    return emptyRet;
+}
+
+void fillPCBholes(cv::Mat &inputImg){
+    // Invert the grayscale image
+    cv::Mat des = 255 - inputImg;
+
+    // Find contours in the inverted image
+    std::vector<std::vector<cv::Point>> contours;
+    std::vector<cv::Vec4i> hierarchy;
+    cv::findContours(des, contours, hierarchy, cv::RETR_CCOMP, cv::CHAIN_APPROX_SIMPLE);
+
+    // Draw filled contours on the inverted image
+    for (int i = 0; i < contours.size(); i++) {
+        cv::drawContours(des, contours, i, cv::Scalar(255), -1);
+    }
+
+    // Invert the image back to get the final result
+    inputImg = des;
+}
+
+cv::Mat getPCBmask(cv::Mat inputImg, std::vector<int> lowerLims, std::vector<int> upperLims){
+  // Convert to HSV
+  cv::Mat hsvImg;
+  cv::cvtColor(inputImg, hsvImg, cv::COLOR_BGR2HSV);
+
+  // Define the bound of the color to filter
+  cv::Scalar lower_green(lowerLims[0], lowerLims[1], lowerLims[2]);
+  cv::Scalar upper_green(upperLims[0], upperLims[1], upperLims[2]);
+
+  // Create mask
+  cv::Mat mask;
+  cv::inRange(inputImg, lower_green, upper_green, mask);
+  // Repair mask (remove noise and holes)
+  closeMask(mask, 7);
+  // floodMask(mask);
+  display_img(mask, true);
+
+  return mask;
+}
+
 cv::Mat colorFilterHSV(cv::Mat inputImg, std::vector<int> lowerLims, std::vector<int> upperLims){
   // Convert to HSV
   cv::Mat hsvImg;
@@ -70,10 +159,10 @@ cv::Mat colorFilterHSV(cv::Mat inputImg, std::vector<int> lowerLims, std::vector
   // Create mask
   cv::Mat mask;
   cv::inRange(inputImg, lower_green, upper_green, mask);
+  // Repair mask (remove noise and holes)
+  closeMask(mask, 2);
   display_img(mask, true);
 
-  // Repair mask (remove noise and holes)
-  repairMask(mask);
 
   // Aplly AND with the mask
   cv::Mat filteredImg;
@@ -84,96 +173,4 @@ cv::Mat colorFilterHSV(cv::Mat inputImg, std::vector<int> lowerLims, std::vector
   cv::cvtColor(filteredImg, result, cv::COLOR_HSV2BGR);
 
   return result;
-}
-////////////////////////////////////////////////////////////////////////////////
-///                           Auxiliary functions                            ///
-////////////////////////////////////////////////////////////////////////////////
-
-void display_img(cv::Mat &original_img, bool resize, int width, int height){
-  // Resize if needed
-  if (resize){
-    cv::Mat display_original_img;
-    cv::resize(original_img, display_original_img, cv::Size(width, height), 0, 0, cv::INTER_LINEAR);
-
-    cv::imshow("Original image", display_original_img);
-    cv::waitKey(0);
-
-  } else{
-    cv::imshow("Original image", original_img);
-    cv::waitKey(0);
-  }
-}
-
-void display_imgs(cv::Mat &original_img, cv::Mat &preprocessed_img, bool resize, int width, int height){
-  // Resize if needed
-  if (resize){
-    cv::Mat display_original_img;
-    cv::resize(original_img, display_original_img, cv::Size(width, height), 0, 0, cv::INTER_LINEAR);
-
-    cv::Mat display_preprocessed_img;
-    cv::resize(preprocessed_img, display_preprocessed_img, cv::Size(width, height), 0, 0, cv::INTER_LINEAR);
-
-    cv::imshow("Original image", display_original_img);
-    cv::waitKey(0);
-    cv::imshow("Preprocessed image", display_preprocessed_img);
-    cv::waitKey(0);
-
-  } else{
-    cv::imshow("Original image", original_img);
-    cv::waitKey(0);
-    cv::imshow("Preprocessed image", preprocessed_img);
-    cv::waitKey(0);
-  }
-}
-
-void printComponentPlace(io::CSVReader <3> comp_placement){
-	std::string comp_name; float x_pos; float y_pos;
-
-	while(comp_placement.read_row(comp_name, x_pos, y_pos)){
-		std::cout << "Component name: " << comp_name << "\n";
-    std::cout << "X position: " << x_pos << "\n";
-		std::cout << "Y position: " << y_pos << "\n\n";
-	}
-}
-
-/**
- * @brief Fill holes of PCB outline, creating a solid rectangle.
- */
-void repairMask(cv::Mat &inputImg){
-    // Threshold.
-    // Set values equal to or above 220 to 0.
-    // Set values below 220 to 255.
-    cv::Mat im_th;
-    threshold(inputImg, im_th, 220, 255, cv::THRESH_BINARY_INV);
- 
-    // Floodfill from point (0, 0)
-    cv::Mat im_floodfill = im_th.clone();
-    cv::floodFill(im_floodfill, cv::Point(0,0), cv::Scalar(255));
- 
-    // Invert floodfilled image
-    cv::Mat im_floodfill_inv;
-    cv::bitwise_not(im_floodfill, im_floodfill_inv);
- 
-    // Combine the two images to get the foreground.
-    // Change inputImg to resulting img
-    inputImg = (im_th | im_floodfill_inv);
-}
-
-void closeMask(cv::Mat &inputImg){
-  int morph_size = 3;
-
-  // Create structuring element 
-  cv::Mat element = getStructuringElement( 
-      cv::MORPH_RECT, 
-      cv::Size(2 * morph_size + 1, 
-           2 * morph_size + 1), 
-      cv::Point(morph_size, morph_size)); 
-  cv::Mat output; 
-  
-  // Closing 
-  cv::morphologyEx(inputImg, output, 
-             cv::MORPH_CLOSE, element, 
-             cv::Point(-1, -1), 2); 
-
-  inputImg = output;
 }

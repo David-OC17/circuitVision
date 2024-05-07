@@ -1,7 +1,9 @@
+#ifndef PCB_INSPECTION_H
+#define PCB_INSPECTION_H
+
 #include <opencv2/opencv.hpp>
 #include <opencv2/imgproc.hpp>
 #include <vector>
-
 
 ////////////////////////////////////////////////////////////////////////////////
 ///                             Preprocessing                                ///
@@ -14,9 +16,14 @@
 cv::Mat preprocessImg(cv::Mat inputImg);
 
 /**
- * @brief MISSING DESCRIPTION
+ * @brief Correct image perspective by calculating its transforma and applying it to the image. 
+ *
+ * @param inputImg Image to correct perspective on.
+ * @param corners Vector of points to the current corners of the figure to move.
+ * @param width Size in x of the screen.
+ * @param height Size in y of the screen.
  */
-cv::Mat correctPerspective(cv::Mat inputImg);
+cv::Mat correctPerspective(cv::Mat inputImg, std::vector<cv::Point> corners, int width=2560, int height=1600);
 
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -32,6 +39,18 @@ cv::Mat correctPerspective(cv::Mat inputImg);
  */
 void noise_removal(cv::Mat &XOR_img, int closure_iterations=3, int ind_operation_iterations=3);
 
+/**
+ * @brief Find largest rectable in the inputImg.
+ *
+ * @param inputImg Binary image in which to find largest rectangle points.
+ * @return A vector of the 4 resulting cv::Point.
+ */
+std::vector<cv::Point> findLargestContour(cv::Mat inputImg);
+
+/**
+ * @brief Fill the holes that remain in binary representation of mask.
+ */
+void fillPCBholes(cv::Mat &inputImg);
 
 /**
  * @brief Filter specific color range and return resulting mask
@@ -40,5 +59,15 @@ void noise_removal(cv::Mat &XOR_img, int closure_iterations=3, int ind_operation
  * @param lowerLims HSV color lower limits in the form [H, S, V].
  * @param upperLims HSV color upper limits in the form [H, S, V].
  */
+cv::Mat getPCBmask(cv::Mat inputImg, std::vector<int> lowerLims, std::vector<int> upperLims);
+
+/**
+ * @brief Filter specific color range and return masked original image.
+ *
+ * @param inputImg Image to process and generate mask.
+ * @param lowerLims HSV color lower limits in the form [H, S, V].
+ * @param upperLims HSV color upper limits in the form [H, S, V].
+ */
 cv::Mat colorFilterHSV(cv::Mat inputImg, std::vector<int> lowerLims, std::vector<int> upperLims);
 
+#endif // PCB_INSPECTION_H

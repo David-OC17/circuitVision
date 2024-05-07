@@ -26,10 +26,10 @@ int main(){
   cv::Mat final_eval_img = preprocessImg(eval_img_RGB); 
   
   // Reference image - show original and preprocessed reference image 
-  display_img(ref_img_RGB, final_ref_img, true);
+  display_imgs(ref_img_RGB, final_ref_img, true);
 
   // Evaluate image - show original and preprocessed reference image 
-  display_img(eval_img_RGB, final_eval_img, true);
+  display_imgs(eval_img_RGB, final_eval_img, true);
 
   // XOR evaluate and reference image
   cv::Mat XOR_result;
