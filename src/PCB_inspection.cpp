@@ -1,17 +1,36 @@
-#include <vector>
-#include <iostream>
+/**
+ * @file
+ * @author David Ortiz
+ * @version 1.0
+ *
+ * @section LICENSE
+*
+ * This program is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU General Public License as
+ * published by the Free Software Foundation; either version 3 of
+ * the License, or (at your option) any later version.
+ *
+ * @section DESCRIPTION
+ *
+ * This file contains the implementation of functions for
+ * preprocessing of images, for the process of automatic PCB
+ * optical inspection.
+ */
 
-#include <opencv2/opencv.hpp>
+#include <iostream>
+#include <vector>
+
 #include <opencv2/imgproc.hpp>
+#include <opencv2/opencv.hpp>
 
 #include "../include/PCB_inspection.hpp"
 #include "../include/aux_functions.hpp"
 
-////////////////////////////////////////////////////////////////////////////////
-///                             Preprocessing                                ///
-////////////////////////////////////////////////////////////////////////////////
+/************************************************
+ *              Preprocessing
+ ***********************************************/
 
-cv::Mat preprocessImg(cv::Mat inputImg){
+cv::Mat preprocessImg(cv::Mat inputImg) {
   // Apply Gaussian blur
   cv::Mat bluredImg;
   cv::GaussianBlur(inputImg, bluredImg, cv::Size(3, 3), 0, cv::BORDER_DEFAULT);
@@ -22,112 +41,128 @@ cv::Mat preprocessImg(cv::Mat inputImg){
 
   // Apply thresholding
   cv::Mat threshBluredGrayImg;
-  cv::threshold(bluredGrayImg, threshBluredGrayImg, 127, 255, cv::THRESH_BINARY_INV);
+  cv::threshold(bluredGrayImg, threshBluredGrayImg, 127, 255,
+                cv::THRESH_BINARY_INV);
 
-  // Apply closign morphological operation 
+  // Apply closign morphological operation
   cv::Mat finalImg;
-  cv::morphologyEx(threshBluredGrayImg, finalImg, cv::MORPH_CLOSE, cv::getStructuringElement(cv::MORPH_RECT, cv::Size(3, 3)));
+  cv::morphologyEx(threshBluredGrayImg, finalImg, cv::MORPH_CLOSE,
+                   cv::getStructuringElement(cv::MORPH_RECT, cv::Size(3, 3)));
 
   return finalImg;
 }
 
-cv::Mat correctPerspective(cv::Mat inputImg, std::vector<cv::Point> corners, int width, int height){
+cv::Mat correctPerspective(cv::Mat inputImg, std::vector<cv::Point> corners,
+                           int width, int height) {
   // Cast points
-  std::vector<cv::Point2f> srcCorners = {static_cast<cv::Point2f>(corners[0]), static_cast<cv::Point2f>(corners[1]), static_cast<cv::Point2f>(corners[2]), static_cast<cv::Point2f>(corners[3])};
+  std::vector<cv::Point2f> srcCorners = {static_cast<cv::Point2f>(corners[0]),
+                                         static_cast<cv::Point2f>(corners[1]),
+                                         static_cast<cv::Point2f>(corners[2]),
+                                         static_cast<cv::Point2f>(corners[3])};
 
   // Destination corner
   std::vector<cv::Point2f> destCorners = {
-    cv::Point2f(0,0),
-    cv::Point2f(width - 1, 0),
-    cv::Point2f(width - 1, height - 1),
-    cv::Point2f(0, height - 1)
-  };
+      cv::Point2f(0, 0), cv::Point2f(width - 1, 0),
+      cv::Point2f(width - 1, height - 1), cv::Point2f(0, height - 1)};
 
-  // Calculate transform from set of given corners to window corners (fit to all the window)
-  cv::Mat imgTransform; 
-  cv::getPerspectiveTransform(srcCorners, destCorners); 
+  // Calculate transform from set of given corners to window corners (fit to all
+  // the window)
+  cv::Mat imgTransform;
+  imgTransform = cv::getPerspectiveTransform(srcCorners, destCorners);
+
+  // std::cout << "imgTransform type: " << imgTransform.type() << std::endl;
+  // std::cout << "imgTransform size: " << imgTransform.rows << "x" <<
+  // imgTransform.cols << std::endl;
 
   // Apply the transformation
-  cv::Mat noPersp;
   cv::Size img_size(width, height);
-  // cv::warpPerspective(inputImg, noPersp, imgTransform, img_size);
+  cv::Mat noPersp(img_size, inputImg.type());
+  cv::warpPerspective(inputImg, noPersp, imgTransform, img_size);
 
-  return inputImg;
+  return noPersp;
 }
 
-////////////////////////////////////////////////////////////////////////////////
-///                             Fault finding                                ///
-////////////////////////////////////////////////////////////////////////////////
- 
-void noise_removal(cv::Mat &XOR_img, int closure_iterations, int ind_operation_iterations){
-  cv::Mat closure_kernel = cv::getStructuringElement(cv::MORPH_RECT, cv::Size(3, 3));
+/************************************************
+ *               Fault finding
+ ***********************************************/
+
+void noise_removal(cv::Mat &XOR_img, int closure_iterations,
+                   int ind_operation_iterations) {
+  cv::Mat closure_kernel =
+      cv::getStructuringElement(cv::MORPH_RECT, cv::Size(3, 3));
   cv::Mat XOR_eroded_img;
   cv::Mat XOR_dialated_img;
 
   // Apply closure via erossion and dilation
-  cv::erode(XOR_img, XOR_eroded_img, closure_kernel, cv::Point(-1, -1), ind_operation_iterations);
-  cv::dilate(XOR_eroded_img, XOR_dialated_img, closure_kernel, cv::Point(-1, -1), ind_operation_iterations);
+  cv::erode(XOR_img, XOR_eroded_img, closure_kernel, cv::Point(-1, -1),
+            ind_operation_iterations);
+  cv::dilate(XOR_eroded_img, XOR_dialated_img, closure_kernel,
+             cv::Point(-1, -1), ind_operation_iterations);
 
   XOR_img = XOR_dialated_img;
 }
 
-std::vector<cv::Point> findLargestContour(cv::Mat inputImg){
-    // Detect the contours in the image
-    std::vector<std::vector<cv::Point>> contours;
-    std::vector<cv::Vec4i> hierarchy;
-    cv::findContours(inputImg, contours, hierarchy, cv::RETR_TREE, cv::CHAIN_APPROX_SIMPLE);
+std::vector<cv::Point> findLargestContour(cv::Mat inputImg) {
+  // Detect the contours in the image
+  std::vector<std::vector<cv::Point>> contours;
+  std::vector<cv::Vec4i> hierarchy;
+  cv::findContours(inputImg, contours, hierarchy, cv::RETR_TREE,
+                   cv::CHAIN_APPROX_SIMPLE);
 
-    // Find the largest contour
-    int largestArea = 0;
-    int largestContourIndex = -1;
-    for (int i = 0; i < contours.size(); i++) {
-        double area = cv::contourArea(contours[i]);
-        if (area > largestArea) {
-            largestArea = area;
-            largestContourIndex = i;
-        }
+  // Find the largest contour
+  int largestArea = 0;
+  int largestContourIndex = -1;
+  for (int i = 0; i < contours.size(); i++) {
+    double area = cv::contourArea(contours[i]);
+    if (area > largestArea) {
+      largestArea = area;
+      largestContourIndex = i;
     }
+  }
 
-    // Approximate the largest contour to a polygon
-    std::vector<cv::Point> approx;
-    cv::approxPolyDP(contours[largestContourIndex], approx, 0.01 * cv::arcLength(contours[largestContourIndex], true), true);
+  // Approximate the largest contour to a polygon
+  std::vector<cv::Point> approx;
+  cv::approxPolyDP(contours[largestContourIndex], approx,
+                   0.01 * cv::arcLength(contours[largestContourIndex], true),
+                   true);
 
-    // Check if the polygon has 4 vertices and a sufficiently large area
-    if (approx.size() == 4 && largestArea > 1000) {
-      // Give the coordinates of the corners of the largest rectangle
-      std::cout << approx[0] << "\n";
-      std::cout << approx[1] << "\n";
-      std::cout << approx[2] << "\n";
-      std::cout << approx[3] << "\n";
+  // Check if the polygon has 4 vertices and a sufficiently large area
+  if (approx.size() == 4 && largestArea > 1000) {
+    // Give the coordinates of the corners of the largest rectangle
+    std::cout << approx[0] << "\n";
+    std::cout << approx[1] << "\n";
+    std::cout << approx[2] << "\n";
+    std::cout << approx[3] << "\n";
 
-      return approx;
+    return approx;
+  }
 
-    }
-
-    std::cout << "No large rectangle found in the image." << std::endl;
-    std::vector<cv::Point> emptyRet;
-    return emptyRet;
+  std::cout << "No large rectangle found in the image." << std::endl;
+  std::vector<cv::Point> emptyRet;
+  return emptyRet;
 }
 
-void fillPCBholes(cv::Mat &inputImg){
-    // Invert the grayscale image
-    cv::Mat des = 255 - inputImg;
+void fillPCBholes(cv::Mat &inputImg) {
+  // Invert the grayscale image
+  cv::Mat des = 255 - inputImg;
 
-    // Find contours in the inverted image
-    std::vector<std::vector<cv::Point>> contours;
-    std::vector<cv::Vec4i> hierarchy;
-    cv::findContours(des, contours, hierarchy, cv::RETR_CCOMP, cv::CHAIN_APPROX_SIMPLE);
+  // Find contours in the inverted image
+  std::vector<std::vector<cv::Point>> contours;
+  std::vector<cv::Vec4i> hierarchy;
+  cv::findContours(des, contours, hierarchy, cv::RETR_CCOMP,
+                   cv::CHAIN_APPROX_SIMPLE);
 
-    // Draw filled contours on the inverted image
-    for (int i = 0; i < contours.size(); i++) {
-        cv::drawContours(des, contours, i, cv::Scalar(255), -1);
-    }
+  // Draw filled contours on the inverted image
+  for (int i = 0; i < contours.size(); i++) {
+    cv::drawContours(des, contours, i, cv::Scalar(255), -1);
+  }
 
-    // Invert the image back to get the final result
-    inputImg = des;
+  // Invert the image back to get the final result
+  inputImg = des;
 }
 
-cv::Mat getPCBmask(cv::Mat inputImg, std::vector<int> lowerLims, std::vector<int> upperLims){
+cv::Mat getPCBmask(cv::Mat inputImg, std::vector<int> lowerLims,
+                   std::vector<int> upperLims) {
   // Convert to HSV
   cv::Mat hsvImg;
   cv::cvtColor(inputImg, hsvImg, cv::COLOR_BGR2HSV);
@@ -147,7 +182,8 @@ cv::Mat getPCBmask(cv::Mat inputImg, std::vector<int> lowerLims, std::vector<int
   return mask;
 }
 
-cv::Mat colorFilterHSV(cv::Mat inputImg, std::vector<int> lowerLims, std::vector<int> upperLims){
+cv::Mat colorFilterHSV(cv::Mat inputImg, std::vector<int> lowerLims,
+                       std::vector<int> upperLims) {
   // Convert to HSV
   cv::Mat hsvImg;
   cv::cvtColor(inputImg, hsvImg, cv::COLOR_BGR2HSV);
@@ -162,7 +198,6 @@ cv::Mat colorFilterHSV(cv::Mat inputImg, std::vector<int> lowerLims, std::vector
   // Repair mask (remove noise and holes)
   closeMask(mask, 2);
   display_img(mask, true);
-
 
   // Aplly AND with the mask
   cv::Mat filteredImg;
