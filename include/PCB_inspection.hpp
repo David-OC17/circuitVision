@@ -93,4 +93,5 @@ cv::Mat getPCBmask(cv::Mat inputImg, std::vector<int> lowerLims,
 cv::Mat colorFilterHSV(cv::Mat inputImg, std::vector<int> lowerLims,
                        std::vector<int> upperLims);
 
+
 #endif // PCB_INSPECTION_H

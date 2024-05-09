@@ -117,6 +117,7 @@ std::vector<cv::Point> findLargestContour(cv::Mat inputImg) {
     if (area > largestArea) {
       largestArea = area;
       largestContourIndex = i;
+
     }
   }
 
@@ -209,3 +210,8 @@ cv::Mat colorFilterHSV(cv::Mat inputImg, std::vector<int> lowerLims,
 
   return result;
 }
+
+////////////////////////////////////////////////////////////////////////////////
+///                               Homography                                 ///
+////////////////////////////////////////////////////////////////////////////////
+
