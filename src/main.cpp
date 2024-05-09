@@ -15,7 +15,7 @@
  * This document contains the main implementation for the
  * developed AOI system for PCB. The system is setup to work with
  * a specific PCB board, and must be modified in order to support
- * others. 
+ * others.
  */
 
 #include <opencv2/imgproc.hpp>
@@ -45,7 +45,7 @@ int main() {
   std::vector<cv::Point> eval_corners;
   eval_corners = findLargestContour(eval_mask);
 
-  // Correct perspective on reference and evaluate img
+  // Correct perspective on reference and evaluate image
   cv::Mat noPersp_ref, noPersp_eval;
   noPersp_ref = correctPerspective(ref_img_RGB, ref_corners);
   noPersp_eval = correctPerspective(eval_img_RGB, eval_corners);

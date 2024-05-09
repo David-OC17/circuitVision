@@ -12,7 +12,7 @@
  *
  * @section DESCRIPTION
  *
- * This header file specifies the functions avaiable for the PCB
+ * This header file specifies the functions available for the PCB
  * AOI system, including a preprocessing and a fault finding
  * section.
  */
@@ -35,7 +35,7 @@
 cv::Mat preprocessImg(cv::Mat inputImg);
 
 /**
- * @brief Correct image perspective by calculating its transforma and applying
+ * @brief Correct image perspective by calculating its transform and applying
  * it to the image.
  *
  * @param inputImg Image to correct perspective on.
@@ -61,7 +61,7 @@ void noise_removal(cv::Mat &XOR_img, int closure_iterations = 3,
                    int ind_operation_iterations = 3);
 
 /**
- * @brief Find largest rectable in the inputImg.
+ * @brief Find largest rectangle in the inputImg.
  *
  * @param inputImg Binary image in which to find largest rectangle points.
  * @return A vector of the 4 resulting cv::Point.

@@ -12,7 +12,7 @@
  *
  * @section DESCRIPTION
  *
- * This header file specifies functions avaible as auxiliaries
+ * This header file specifies functions available as auxiliaries
  * to the ones specified in PCB_inspection.hpp
  */
 
@@ -43,7 +43,7 @@ void closeMask(cv::Mat &inputImg, int repetitions = 1);
  * @brief Resize image and display to screen.
  *
  * @param original_img Image to resize and display
- * @param resize Wether to resize or not.
+ * @param resize Whether to resize or not.
  * @param width Width of image to display, in pixels.
  * @param height Height of image to display, in pixels.
  */
@@ -55,7 +55,7 @@ void display_img(cv::Mat &original_img, bool resize, int width = 2560,
  *
  * @param original_img Image to resize and display
  * @param preprocessed_img Preprocessed image to resize and display.
- * @param resize Wether to resize or not.
+ * @param resize Whether to resize or not.
  * @param width Width of image to display, in pixels.
  * @param height Height of image to display, in pixels.
  */
