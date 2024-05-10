@@ -25,6 +25,20 @@
 #include "csv.hpp"
 
 /**
+ * @brief Comparator function for std::vector<cv::Point>
+ */
+bool comparePoints(const cv::Point &a, const cv::Point &b);
+
+/************************************************
+ *                   PCB mask
+ ***********************************************/
+
+/**
+ * @brief Fill the holes that remain in binary representation of mask.
+ */
+void fillPCBholes(cv::Mat &inputImg);
+
+/**
  * @brief Fill holes of PCB outline, starting from the center, creating a solid
  * rectangle.
  */
@@ -38,6 +52,10 @@ void floodMask(cv::Mat &inputImg, int width = 2560, int height = 1600);
  * (default = 1)
  */
 void closeMask(cv::Mat &inputImg, int repetitions = 1);
+
+/************************************************
+ *            Displaying and printing
+ ***********************************************/
 
 /**
  * @brief Resize image and display to screen.
@@ -69,5 +87,15 @@ void display_imgs(cv::Mat &original_img, cv::Mat &preprocessed_img, bool resize,
  * print.
  */
 void printComponentPlace(io::CSVReader<3> comp_placement);
+
+/**
+ * @brief Print to stdio components with their bounding boxes, with the
+ * data of their bounding boxes. The data is (topLeft_x, topLeft_y, size_x,
+ * size_y).
+ *
+ * @param corners CSVReader object containing information from CSV to
+ * print.
+ */
+void printCompBoundBoxes(io::CSVReader<5> &corners);
 
 #endif // AUX_FUNCTIONS_H

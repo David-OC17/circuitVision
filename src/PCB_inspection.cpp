@@ -4,7 +4,7 @@
  * @version 1.0
  *
  * @section LICENSE
-*
+ *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License as
  * published by the Free Software Foundation; either version 3 of
@@ -17,6 +17,7 @@
  * optical inspection.
  */
 
+#include <algorithm>
 #include <iostream>
 #include <vector>
 
@@ -54,6 +55,10 @@ cv::Mat preprocessImg(cv::Mat inputImg) {
 
 cv::Mat correctPerspective(cv::Mat inputImg, std::vector<cv::Point> corners,
                            int width, int height) {
+  // Sort source corners to match destination corners in the transformation
+  // calculation
+  std::sort(corners.begin(), corners.end(), comparePoints);
+
   // Cast points
   std::vector<cv::Point2f> srcCorners = {static_cast<cv::Point2f>(corners[0]),
                                          static_cast<cv::Point2f>(corners[1]),
@@ -61,14 +66,14 @@ cv::Mat correctPerspective(cv::Mat inputImg, std::vector<cv::Point> corners,
                                          static_cast<cv::Point2f>(corners[3])};
 
   // Destination corner
-  std::vector<cv::Point2f> destCorners = {
+  std::vector<cv::Point2f> dstCorners = {
       cv::Point2f(0, 0), cv::Point2f(width - 1, 0),
       cv::Point2f(width - 1, height - 1), cv::Point2f(0, height - 1)};
 
   // Calculate transform from set of given corners to window corners (fit to all
   // the window)
   cv::Mat imgTransform;
-  imgTransform = cv::getPerspectiveTransform(srcCorners, destCorners);
+  imgTransform = cv::getPerspectiveTransform(srcCorners, dstCorners);
 
   // std::cout << "imgTransform type: " << imgTransform.type() << std::endl;
   // std::cout << "imgTransform size: " << imgTransform.rows << "x" <<
@@ -100,6 +105,24 @@ void noise_removal(cv::Mat &XOR_img, int closure_iterations,
              cv::Point(-1, -1), ind_operation_iterations);
 
   XOR_img = XOR_dialated_img;
+}
+
+std::vector<boxCorners> getBoundingBoxCorners(io::CSVReader<5> &csvData) {
+  std::vector<boxCorners> corners;
+  std::string comp_name;
+  int pos_x, pos_y, size_x, size_y;
+
+  while (csvData.read_row(comp_name, pos_x, pos_y, size_x, size_y)) {
+    boxCorners temp_row;
+
+    temp_row.comp_name = comp_name;
+    temp_row.topLeft = cv::Point(pos_x, pos_y);
+    temp_row.topRight = cv::Point(pos_x + size_x, pos_y);
+    temp_row.bottomLeft = cv::Point(pos_x, pos_y + size_y);
+    temp_row.bottomRight = cv::Point(pos_x + size_x, pos_y + size_y);
+  }
+
+  return corners;
 }
 
 std::vector<cv::Point> findLargestContour(cv::Mat inputImg) {
@@ -143,25 +166,6 @@ std::vector<cv::Point> findLargestContour(cv::Mat inputImg) {
   return emptyRet;
 }
 
-void fillPCBholes(cv::Mat &inputImg) {
-  // Invert the grayscale image
-  cv::Mat des = 255 - inputImg;
-
-  // Find contours in the inverted image
-  std::vector<std::vector<cv::Point>> contours;
-  std::vector<cv::Vec4i> hierarchy;
-  cv::findContours(des, contours, hierarchy, cv::RETR_CCOMP,
-                   cv::CHAIN_APPROX_SIMPLE);
-
-  // Draw filled contours on the inverted image
-  for (int i = 0; i < contours.size(); i++) {
-    cv::drawContours(des, contours, i, cv::Scalar(255), -1);
-  }
-
-  // Invert the image back to get the final result
-  inputImg = des;
-}
-
 cv::Mat getPCBmask(cv::Mat inputImg, std::vector<int> lowerLims,
                    std::vector<int> upperLims) {
   // Convert to HSV
@@ -182,6 +186,7 @@ cv::Mat getPCBmask(cv::Mat inputImg, std::vector<int> lowerLims,
 
   return mask;
 }
+<<<<<<< Updated upstream
 
 cv::Mat colorFilterHSV(cv::Mat inputImg, std::vector<int> lowerLims,
                        std::vector<int> upperLims) {
@@ -215,3 +220,5 @@ cv::Mat colorFilterHSV(cv::Mat inputImg, std::vector<int> lowerLims,
 ///                               Homography                                 ///
 ////////////////////////////////////////////////////////////////////////////////
 
+=======
+>>>>>>> Stashed changes

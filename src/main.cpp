@@ -27,7 +27,8 @@
 int main() {
   // Import image and create gray copy
   cv::Mat ref_img_RGB = cv::imread("../imgs/best_conditions/ELYOS_PCB_0.jpg");
-  cv::Mat eval_img_RGB = cv::imread("../imgs/best_conditions/ELYOS_PCB_4.jpg");
+  cv::Mat eval_img_RGB =
+      cv::imread("../imgs/best_conditions/ELYOS_PCB_4_missing_comp2.jpg");
 
   // Detect PCB and create mask
   cv::Mat ref_mask;
@@ -64,10 +65,30 @@ int main() {
   cv::bitwise_xor(preprocessed_ref, preprocessed_eval, XOR_result);
   noise_removal(XOR_result);
 
+  // Combine reference and evaluate images to create bounding boxes manually
+  // (externally) cv::Mat AND_result; cv::bitwise_xor(noPersp_ref, noPersp_eval,
+  // AND_result);
+  // cv::imwrite("../imgs/best_conditions/ELYOS_PCB_noPersp_AND.jpg",
+  // AND_result);
+
   // Display
   display_img(noPersp_ref, true);
   display_img(noPersp_eval, true);
   display_img(XOR_result, true);
+
+  // Read bounding boxes
+  io::CSVReader<5> compBoundBoxes("../board/ELYOS_component_boxes.csv");
+  printCompBoundBoxes(compBoundBoxes);
+
+  // Calculate the corners of the bounding boxes
+  std::vector<boxCorners> cornersBoundingBoxes;
+  cornersBoundingBoxes = getBoundingBoxCorners(compBoundBoxes);
+
+  // Check if components are missing from their respective bounding boxes 
+  std::vector<bool> compSearchResults;
+  //compSearchResults = findComponents(XOR_result, cornersBoundingBoxes);
+
+  // Print results
 
   cv::destroyAllWindows();
 

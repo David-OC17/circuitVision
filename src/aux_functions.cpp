@@ -25,6 +25,73 @@
 #include <opencv2/imgproc.hpp>
 #include <opencv2/opencv.hpp>
 
+bool comparePoints(const cv::Point &a, const cv::Point &b) {
+  if (a.x == b.x) {
+    return a.y < b.y;
+  }
+  return a.x < b.x;
+}
+
+/************************************************
+ *                   PCB mask
+ ***********************************************/
+
+void fillPCBholes(cv::Mat &inputImg) {
+  // Invert the grayscale image
+  cv::Mat des = 255 - inputImg;
+
+  // Find contours in the inverted image
+  std::vector<std::vector<cv::Point>> contours;
+  std::vector<cv::Vec4i> hierarchy;
+  cv::findContours(des, contours, hierarchy, cv::RETR_CCOMP,
+                   cv::CHAIN_APPROX_SIMPLE);
+
+  // Draw filled contours on the inverted image
+  for (int i = 0; i < contours.size(); i++) {
+    cv::drawContours(des, contours, i, cv::Scalar(255), -1);
+  }
+
+  // Invert the image back to get the final result
+  inputImg = des;
+}
+
+void floodMask(cv::Mat &inputImg, int width, int height) {
+  // Calcualte center
+  cv::Point center(width / 2, height / 2);
+
+  // Floodfill from point center of image
+  cv::Mat im_floodfill = inputImg.clone();
+  cv::floodFill(im_floodfill, center, cv::Scalar(255));
+
+  // Invert floodfilled image
+  cv::Mat im_floodfill_inv;
+  cv::bitwise_not(im_floodfill, im_floodfill_inv);
+}
+
+void closeMask(cv::Mat &inputImg, int repetitions) {
+  int morph_size = 25;
+
+  // Create structuring element
+  cv::Mat element = getStructuringElement(
+      cv::MORPH_RECT, cv::Size(2 * morph_size + 1, 2 * morph_size + 1),
+      cv::Point(morph_size, morph_size));
+
+  cv::Mat output;
+
+  // Apply closing operation multiple times
+  while (repetitions) {
+    cv::morphologyEx(inputImg, output, cv::MORPH_CLOSE, element,
+                     cv::Point(-1, -1), 2);
+
+    repetitions--;
+    inputImg = output;
+  }
+}
+
+/************************************************
+ *            Displaying and printing
+ ***********************************************/
+
 void display_img(cv::Mat &original_img, bool resize, int width, int height) {
   // Resize if needed
   if (resize) {
@@ -68,45 +135,26 @@ void display_imgs(cv::Mat &original_img, cv::Mat &preprocessed_img, bool resize,
 
 void printComponentPlace(io::CSVReader<3> comp_placement) {
   std::string comp_name;
-  float x_pos;
-  float y_pos;
+  float pos_x;
+  float pos_y;
 
-  while (comp_placement.read_row(comp_name, x_pos, y_pos)) {
+  while (comp_placement.read_row(comp_name, pos_x, pos_y)) {
     std::cout << "Component name: " << comp_name << "\n";
-    std::cout << "X position: " << x_pos << "\n";
-    std::cout << "Y position: " << y_pos << "\n\n";
+    std::cout << "X position: " << pos_x << "\n";
+    std::cout << "Y position: " << pos_y << "\n\n";
   }
 }
 
-void floodMask(cv::Mat &inputImg, int width, int height) {
-  // Calcualte center
-  cv::Point center(width / 2, height / 2);
+void printCompBoundBoxes(io::CSVReader<5> &compBoundBox) {
+  std::string comp_name;
+  int topLeft_x, topLeft_y, size_x, size_y;
 
-  // Floodfill from point center of image
-  cv::Mat im_floodfill = inputImg.clone();
-  cv::floodFill(im_floodfill, center, cv::Scalar(255));
-
-  // Invert floodfilled image
-  cv::Mat im_floodfill_inv;
-  cv::bitwise_not(im_floodfill, im_floodfill_inv);
-}
-
-void closeMask(cv::Mat &inputImg, int repetitions) {
-  int morph_size = 25;
-
-  // Create structuring element
-  cv::Mat element = getStructuringElement(
-      cv::MORPH_RECT, cv::Size(2 * morph_size + 1, 2 * morph_size + 1),
-      cv::Point(morph_size, morph_size));
-
-  cv::Mat output;
-
-  // Apply closing operation multiple times
-  while (repetitions) {
-    cv::morphologyEx(inputImg, output, cv::MORPH_CLOSE, element,
-                     cv::Point(-1, -1), 2);
-
-    repetitions--;
-    inputImg = output;
+  while (
+      compBoundBox.read_row(comp_name, topLeft_x, topLeft_y, size_x, size_y)) {
+    std::cout << "Component name: " << comp_name << "\n";
+    std::cout << "Top left corner: " << topLeft_x << "\n";
+    std::cout << "Top right corner: " << topLeft_y << "\n";
+    std::cout << "X box size: " << size_x << "\n";
+    std::cout << "Y box size: " << size_y << "\n";
   }
 }

@@ -22,7 +22,11 @@
 
 #include <opencv2/imgproc.hpp>
 #include <opencv2/opencv.hpp>
+
+#include <string>
 #include <vector>
+
+#include "csv.hpp"
 
 /************************************************
  *              Preprocessing
@@ -51,6 +55,36 @@ cv::Mat correctPerspective(cv::Mat inputImg, std::vector<cv::Point> corners,
  ***********************************************/
 
 /**
+ * @brief A structure for a row of a corner for bounding boxes.
+ */
+struct boxCorners {
+  /** @name Component name */
+  /*@{*/
+  std::string comp_name; /**< The component name */
+  /*@*/
+
+  /** @name Corners */
+  /*@{*/
+  cv::Point topLeft;     /**< The top left corner */
+  cv::Point topRight;    /**< The top right corner */
+  cv::Point bottomLeft;  /**< The bottom left corner */
+  cv::Point bottomRight; /**< The bottom right corner */
+  /*@*/
+};
+
+/**
+ * @brief Calculate corners corresponding to the box given by
+ * the object io::CSVReader, with rows (int, int, int, int),
+ * where values represent (comp_name, pos_x, pox_y, size_x, size_y).
+ *
+ * @return Gives a std::vector<boxCorners> back, which is a vector of
+ * structs, with values std::string comp_name, and cv::Point values
+ * for (TL, TR, BL, BR), which represent the corners
+ * (topLeft, topRight, bottomLeft, bottomRight)
+ */
+std::vector<boxCorners> getBoundingBoxCorners(io::CSVReader<5> &csvData);
+
+/**
  * @brief Remove noise from image via closure operation (erosion + dilation)
  *
  * @param XOR_img
@@ -69,11 +103,6 @@ void noise_removal(cv::Mat &XOR_img, int closure_iterations = 3,
 std::vector<cv::Point> findLargestContour(cv::Mat inputImg);
 
 /**
- * @brief Fill the holes that remain in binary representation of mask.
- */
-void fillPCBholes(cv::Mat &inputImg);
-
-/**
  * @brief Filter specific color range and return resulting mask
  *
  * @param inputImg Image to process and generate mask.
@@ -83,6 +112,7 @@ void fillPCBholes(cv::Mat &inputImg);
 cv::Mat getPCBmask(cv::Mat inputImg, std::vector<int> lowerLims,
                    std::vector<int> upperLims);
 
+<<<<<<< Updated upstream
 /**
  * @brief Filter specific color range and return masked original image.
  *
@@ -94,4 +124,6 @@ cv::Mat colorFilterHSV(cv::Mat inputImg, std::vector<int> lowerLims,
                        std::vector<int> upperLims);
 
 
+=======
+>>>>>>> Stashed changes
 #endif // PCB_INSPECTION_H
