@@ -12,17 +12,15 @@
  *
  * @section DESCRIPTION
  *
- * This document contains the main implementation for the
- * developed AOI system for PCB. The system is setup to work with
- * a specific PCB board, and must be modified in order to support
- * others.
+ * Use this script to generate AND image of reference and evaluate image,
+ * so you may determine the bounding boxes of your components more
+ * precisely.
  */
 
 #include <opencv2/imgproc.hpp>
 #include <opencv2/opencv.hpp>
 
 #include "../include/PCB_inspection.hpp"
-#include "../include/aux_functions.hpp"
 
 int main() {
   // Import image and create gray copy
@@ -60,36 +58,11 @@ int main() {
   cv::bitwise_xor(preprocessed_ref, preprocessed_eval, XOR_result);
   noise_removal(XOR_result);
 
-  // Read bounding boxes
-  io::CSVReader<5> compBoundBoxes("../board/ELYOS_component_boxes.csv");
-  // printCompBoundBoxes(compBoundBoxes);
-
-  // Create bounding box images
-  std::vector<cv::Mat> imgBoxes;
-  imgBoxes = createImgBoxes(XOR_result, compBoundBoxes);
-
-  // Display all image boxes
-  cv::Mat boxCanvas;
-  boxCanvas = makeCanvas(imgBoxes, 1600, 8);
-  display_img(boxCanvas);
-
-  // Read max lighting values for boxes
-  io::CSVReader<2> maxLighitingVal("../board/ELYOS_component_maxLighting.csv");
-
-  // Check if components are missing from their respective bounding boxes 
-  std::vector<std::pair<std::string, int>> compSearchResults;
-  compSearchResults = verifyComponents(imgBoxes, maxLighitingVal);
-
-  // Display reference and evaluate iamge, XOR result, and results 
-  // display_img(noPersp_ref);
-  // display_img(noPersp_eval);
-  // display_img(XOR_result);
-  // printResults(compSearchResults);
- 
-  // Save results to CSV file  
-  saveResultsCSV(compSearchResults);
-
-  cv::destroyAllWindows();
+  // Combine reference and evaluate images to create bounding boxes manually
+  // (externally)
+  cv::Mat AND_result;
+  cv::bitwise_xor(noPersp_ref, noPersp_eval, AND_result);
+  cv::imwrite("../imgs/best_conditions/ELYOS_PCB_noPersp_AND.jpg", AND_result);
 
   return EXIT_SUCCESS;
 }
