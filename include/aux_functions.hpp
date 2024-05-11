@@ -29,6 +29,13 @@
  */
 bool comparePoints(const cv::Point &a, const cv::Point &b);
 
+/**
+ * @brief Save the result pairs to a CSV with columns ComponentName,
+ * IspectionResult.
+ */
+void saveResultsCSV(std::vector<std::pair<std::string, int>> &results,
+                    std::string filename = "../results.csv");
+
 /************************************************
  *                   PCB mask
  ***********************************************/
@@ -58,6 +65,12 @@ void closeMask(cv::Mat &inputImg, int repetitions = 1);
  ***********************************************/
 
 /**
+ * @brief Display the results of the processing to terminal.
+ */
+void printResults(
+    std::vector<std::pair<std::string, int>> &componentSearchResults);
+
+/**
  * @brief Resize image and display to screen.
  *
  * @param original_img Image to resize and display
@@ -65,7 +78,7 @@ void closeMask(cv::Mat &inputImg, int repetitions = 1);
  * @param width Width of image to display, in pixels.
  * @param height Height of image to display, in pixels.
  */
-void display_img(cv::Mat &original_img, bool resize, int width = 2560,
+void display_img(cv::Mat &original_img, bool resize = true, int width = 2560,
                  int height = 1600);
 
 /**
@@ -97,5 +110,25 @@ void printComponentPlace(io::CSVReader<3> comp_placement);
  * print.
  */
 void printCompBoundBoxes(io::CSVReader<5> &corners);
+
+/**
+ * @brief Display all 65 component images to a large grid
+ */
+void displayAllCompBoxes(std::vector<cv::Mat> compImgs);
+
+/**
+ * @brief makeCanvas Makes composite image from the given images
+ *
+ * Credit to vinvinod from StackOverflow for the implementation of this
+ * function. See:
+ * https://stackoverflow.com/questions/5089927/show-multiple-2-3-4-images-in-the-same-window-in-opencv
+ *
+ * @param vecMat Vector of Images.
+ * @param windowHeight The height of the new composite image to be formed.
+ * @param nRows Number of rows of images. (Number of columns will be calculated
+ *              depending on the value of total number of images).
+ * @return new composite image.
+ */
+cv::Mat makeCanvas(std::vector<cv::Mat> &vecMat, int windowHeight, int nRows);
 
 #endif // AUX_FUNCTIONS_H

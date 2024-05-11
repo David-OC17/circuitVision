@@ -26,6 +26,7 @@
 
 #include "../include/PCB_inspection.hpp"
 #include "../include/aux_functions.hpp"
+#include "../include/csv.hpp"
 
 /************************************************
  *              Preprocessing
@@ -120,12 +121,14 @@ std::vector<boxCorners> getBoundingBoxCorners(io::CSVReader<5> &csvData) {
     temp_row.topRight = cv::Point(pos_x + size_x, pos_y);
     temp_row.bottomLeft = cv::Point(pos_x, pos_y + size_y);
     temp_row.bottomRight = cv::Point(pos_x + size_x, pos_y + size_y);
+
+    corners.push_back(temp_row);
   }
 
   return corners;
 }
 
-std::vector<cv::Point> findLargestContour(cv::Mat inputImg) {
+std::vector<cv::Point> findLargestContour(cv::Mat inputImg, bool print) {
   // Detect the contours in the image
   std::vector<std::vector<cv::Point>> contours;
   std::vector<cv::Vec4i> hierarchy;
@@ -140,7 +143,6 @@ std::vector<cv::Point> findLargestContour(cv::Mat inputImg) {
     if (area > largestArea) {
       largestArea = area;
       largestContourIndex = i;
-
     }
   }
 
@@ -153,10 +155,12 @@ std::vector<cv::Point> findLargestContour(cv::Mat inputImg) {
   // Check if the polygon has 4 vertices and a sufficiently large area
   if (approx.size() == 4 && largestArea > 1000) {
     // Give the coordinates of the corners of the largest rectangle
-    std::cout << approx[0] << "\n";
-    std::cout << approx[1] << "\n";
-    std::cout << approx[2] << "\n";
-    std::cout << approx[3] << "\n";
+    if (print) {
+      std::cout << approx[0] << "\n";
+      std::cout << approx[1] << "\n";
+      std::cout << approx[2] << "\n";
+      std::cout << approx[3] << "\n";
+    }
 
     return approx;
   }
@@ -181,44 +185,56 @@ cv::Mat getPCBmask(cv::Mat inputImg, std::vector<int> lowerLims,
   cv::inRange(inputImg, lower_green, upper_green, mask);
   // Repair mask (remove noise and holes)
   closeMask(mask, 7);
-  // floodMask(mask);
-  display_img(mask, true);
+  // display_img(mask, true);
 
   return mask;
 }
-<<<<<<< Updated upstream
 
-cv::Mat colorFilterHSV(cv::Mat inputImg, std::vector<int> lowerLims,
-                       std::vector<int> upperLims) {
-  // Convert to HSV
-  cv::Mat hsvImg;
-  cv::cvtColor(inputImg, hsvImg, cv::COLOR_BGR2HSV);
+std::vector<cv::Mat> createImgBoxes(cv::Mat inputImg,
+                                    io::CSVReader<5> &compBoundBox) {
+  std::vector<cv::Mat> boxImages;
 
-  // Define the bound of the color to filter
-  cv::Scalar lower_green(lowerLims[0], lowerLims[1], lowerLims[2]);
-  cv::Scalar upper_green(upperLims[0], upperLims[1], upperLims[2]);
+  std::string comp_name;
+  int topLeft_x, topLeft_y, size_x, size_y;
 
-  // Create mask
-  cv::Mat mask;
-  cv::inRange(inputImg, lower_green, upper_green, mask);
-  // Repair mask (remove noise and holes)
-  closeMask(mask, 2);
-  display_img(mask, true);
+  while (
+      compBoundBox.read_row(comp_name, topLeft_x, topLeft_y, size_x, size_y)) {
+    cv::Mat tempClone = inputImg(cv::Range(topLeft_y, topLeft_y + size_y),
+                                 cv::Range(topLeft_x, topLeft_x + size_x));
 
-  // Aplly AND with the mask
-  cv::Mat filteredImg;
-  cv::bitwise_and(inputImg, inputImg, filteredImg, mask);
+    // Convert to BGR to be able to use countNonZero pixels
+    cv::Mat tempClone_RGB;
+    cv::cvtColor(tempClone, tempClone_RGB, cv::COLOR_GRAY2BGR);
+      
+    boxImages.push_back(tempClone);
+  }
 
-  // Convert back to BGR
-  cv::Mat result;
-  cv::cvtColor(filteredImg, result, cv::COLOR_HSV2BGR);
-
-  return result;
+  return boxImages;
 }
 
-////////////////////////////////////////////////////////////////////////////////
-///                               Homography                                 ///
-////////////////////////////////////////////////////////////////////////////////
+std::vector<std::pair<std::string, int>>
+verifyComponents(std::vector<cv::Mat> &compImgs,
+                 io::CSVReader<2> &maxLighting) {
+  // True: component found, False: component not found
+  std::vector<std::pair<std::string, int>> results;
 
-=======
->>>>>>> Stashed changes
+  std::string compName;
+  float maxLitPixels; // Max accepted percentage of lit pixels
+  int i = 0;        // Keep count of current component index
+
+  // Verify by calculating average intensity of each binary image and comparing
+  // to the gives max values
+  while (maxLighting.read_row(compName, maxLitPixels)) {
+    // Calculate average number of lit pixels
+    int nonZeroPixels = cv::countNonZero(compImgs[i]);
+    int totalPixels = compImgs[i].rows * compImgs[i].cols;
+    double percentageLitPixels = static_cast<double>(nonZeroPixels) / totalPixels * 100;
+
+    bool tempResult = percentageLitPixels <= maxLitPixels;
+    std::pair<std::string, int> tempResultPair = {compName, tempResult};
+    results.push_back(tempResultPair);
+    i++;
+  }
+
+  return results;
+}

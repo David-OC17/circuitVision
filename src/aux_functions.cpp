@@ -16,8 +16,10 @@
  * to the main AOI PCB inspection system.
  */
 
+#include <fstream>
 #include <iostream>
 #include <string>
+#include <utility>
 
 #include "../include/aux_functions.hpp"
 #include "../include/csv.hpp"
@@ -32,9 +34,33 @@ bool comparePoints(const cv::Point &a, const cv::Point &b) {
   return a.x < b.x;
 }
 
+void saveResultsCSV(std::vector<std::pair<std::string, int>> &results, std::string filename) {
+  // Open the output file
+  std::ofstream file(filename);
+
+  // Write the header
+  file << "ComponentName,InspectionResult" << std::endl;
+
+  // Write each pair to the file
+  for (const auto &pair : results) {
+    file << pair.first << "," << pair.second << std::endl;
+  }
+
+  // Close the file
+  file.close();
+}
+
 /************************************************
  *                   PCB mask
  ***********************************************/
+
+void printResults(
+    std::vector<std::pair<std::string, int>> &componentSearchResults) {
+  for (int i = 0; i < componentSearchResults.size(); i++) {
+    std::cout << componentSearchResults[i].first << " "
+              << componentSearchResults[i].second << "\n";
+  }
+}
 
 void fillPCBholes(cv::Mat &inputImg) {
   // Invert the grayscale image
@@ -157,4 +183,97 @@ void printCompBoundBoxes(io::CSVReader<5> &compBoundBox) {
     std::cout << "X box size: " << size_x << "\n";
     std::cout << "Y box size: " << size_y << "\n";
   }
+}
+
+void displayAllCompBoxes(std::vector<cv::Mat> compImgs) {
+  // Resize each small image to fit within a square
+  // Calculate the size of each square based on the number of images
+  int numImages = 65;
+  int numRows = 9; // Adjust the number of rows and columns based on the total
+                   // number of images
+  int numCols = 8;
+  int squareSize = 100; // Size of each square
+
+  // Create a large window to display the grid of images
+  cv::Mat largeImage(numRows * squareSize, numCols * squareSize, CV_8UC3,
+                     cv::Scalar(255, 255, 255)); // White background
+
+  // Place each resized image in its corresponding square within the large
+  // window
+  int count = 0;
+  for (int i = 0; i < numRows; i++) {
+    for (int j = 0; j < numCols; j++) {
+      if (count < numImages) {
+        cv::Mat smallImage = compImgs[count]; // Get the next small image
+        resize(smallImage, smallImage,
+               cv::Size(squareSize, squareSize)); // Resize the small image
+        cv::Rect roi(j * squareSize, i * squareSize, squareSize,
+                     squareSize); // Define the region of interest
+        smallImage.copyTo(
+            largeImage(roi)); // Copy the small image to the large image
+        count++;
+      }
+    }
+  }
+
+  // Display the grid of images
+  cv::imshow("Grid of Images", largeImage);
+  cv::waitKey(0);
+}
+
+cv::Mat makeCanvas(std::vector<cv::Mat> &vecMat, int windowHeight, int nRows) {
+  int N = vecMat.size();
+  nRows = nRows > N ? N : nRows;
+  int edgeThickness = 10;
+  int imagesPerRow = ceil(double(N) / nRows);
+  int resizeHeight =
+      floor(2.0 *
+            ((floor(double(windowHeight - edgeThickness) / nRows)) / 2.0)) -
+      edgeThickness;
+  int maxRowLength = 0;
+
+  std::vector<int> resizeWidth;
+  for (int i = 0; i < N;) {
+    int thisRowLen = 0;
+    for (int k = 0; k < imagesPerRow; k++) {
+      double aspectRatio = double(vecMat[i].cols) / vecMat[i].rows;
+      int temp = int(ceil(resizeHeight * aspectRatio));
+      resizeWidth.push_back(temp);
+      thisRowLen += temp;
+      if (++i == N)
+        break;
+    }
+    if ((thisRowLen + edgeThickness * (imagesPerRow + 1)) > maxRowLength) {
+      maxRowLength = thisRowLen + edgeThickness * (imagesPerRow + 1);
+    }
+  }
+  int windowWidth = maxRowLength;
+  cv::Scalar backgroundColor(204, 52, 244);
+  cv::Mat canvasImage(windowHeight, windowWidth, CV_8UC3, backgroundColor);
+
+  for (int k = 0, i = 0; i < nRows; i++) {
+    int y = i * resizeHeight + (i + 1) * edgeThickness;
+    int x_end = edgeThickness;
+    for (int j = 0; j < imagesPerRow && k < N; k++, j++) {
+      int x = x_end;
+      cv::Rect roi(x, y, resizeWidth[k], resizeHeight);
+      cv::Size s = canvasImage(roi).size();
+      // change the number of channels to three
+      cv::Mat target_ROI(s, CV_8UC3);
+      if (vecMat[k].channels() != canvasImage.channels()) {
+        if (vecMat[k].channels() == 1) {
+          cv::cvtColor(vecMat[k], target_ROI, cv::COLOR_GRAY2BGR);
+        }
+      } else {
+        vecMat[k].copyTo(target_ROI);
+      }
+      cv::resize(target_ROI, target_ROI, s);
+      if (target_ROI.type() != canvasImage.type()) {
+        target_ROI.convertTo(target_ROI, canvasImage.type());
+      }
+      target_ROI.copyTo(canvasImage(roi));
+      x_end += resizeWidth[k] + edgeThickness;
+    }
+  }
+  return canvasImage;
 }

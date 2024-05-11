@@ -1,5 +1,4 @@
-/**
- * @file
+/** * @file
  * @author David Ortiz
  * @version 1.0
  *
@@ -11,11 +10,11 @@
  * the License, or (at your option) any later version.
  *
  * @section DESCRIPTION
- *
- * This header file specifies the functions available for the PCB
- * AOI system, including a preprocessing and a fault finding
- * section.
- */
+*
+* This header file specifies the functions available for the PCB
+* AOI system, including a preprocessing and a fault finding
+* section.
+*/
 
 #ifndef PCB_INSPECTION_H
 #define PCB_INSPECTION_H
@@ -100,7 +99,7 @@ void noise_removal(cv::Mat &XOR_img, int closure_iterations = 3,
  * @param inputImg Binary image in which to find largest rectangle points.
  * @return A vector of the 4 resulting cv::Point.
  */
-std::vector<cv::Point> findLargestContour(cv::Mat inputImg);
+std::vector<cv::Point> findLargestContour(cv::Mat inputImg, bool print=false);
 
 /**
  * @brief Filter specific color range and return resulting mask
@@ -112,18 +111,27 @@ std::vector<cv::Point> findLargestContour(cv::Mat inputImg);
 cv::Mat getPCBmask(cv::Mat inputImg, std::vector<int> lowerLims,
                    std::vector<int> upperLims);
 
-<<<<<<< Updated upstream
 /**
- * @brief Filter specific color range and return masked original image.
- *
- * @param inputImg Image to process and generate mask.
- * @param lowerLims HSV color lower limits in the form [H, S, V].
- * @param upperLims HSV color upper limits in the form [H, S, V].
+ * @brief Create 65 small images that correspond to the region specified
+ * by the bounding boxes of the components in the PCB
  */
-cv::Mat colorFilterHSV(cv::Mat inputImg, std::vector<int> lowerLims,
-                       std::vector<int> upperLims);
+std::vector<cv::Mat> createImgBoxes(cv::Mat inputImg,
+                                    io::CSVReader<5> &compBoundBox);
 
+/**
+ * @brief Compare the percentage of lit pixels in each component
+ * image box with the max allowed value to consider the component
+ * was found.
+ *
+ * @param compImgs Vector of images corresponding to each of the
+ * components.
+ * @param maxLighting io::CSVReader of integers of the max percentages
+ * allowed for each component, paired with the name of the component.
+ *
+ * @return Vector of pairs, the name of the component and a boolean,
+ * representing if the component was found.
+ */
+std::vector<std::pair<std::string, int>>
+verifyComponents(std::vector<cv::Mat> &compImgs, io::CSVReader<2> &maxLighting);
 
-=======
->>>>>>> Stashed changes
 #endif // PCB_INSPECTION_H
