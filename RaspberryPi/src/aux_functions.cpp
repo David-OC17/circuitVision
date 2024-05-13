@@ -16,6 +16,8 @@
  * to the main AOI PCB inspection system.
  */
 
+#include <cstdlib>
+#include <filesystem>
 #include <fstream>
 #include <iostream>
 #include <string>
@@ -27,6 +29,10 @@
 #include <opencv2/imgproc.hpp>
 #include <opencv2/opencv.hpp>
 
+/************************************************
+ *              Other aux functions
+ ***********************************************/
+
 bool comparePoints(const cv::Point &a, const cv::Point &b) {
   if (a.x == b.x) {
     return a.y < b.y;
@@ -34,7 +40,8 @@ bool comparePoints(const cv::Point &a, const cv::Point &b) {
   return a.x < b.x;
 }
 
-void saveResultsCSV(std::vector<std::pair<std::string, int>> &results, std::string filename) {
+void saveResultsCSV(std::vector<std::pair<std::string, int>> &results,
+                    std::string filename) {
   // Open the output file
   std::ofstream file(filename);
 
@@ -48,6 +55,60 @@ void saveResultsCSV(std::vector<std::pair<std::string, int>> &results, std::stri
 
   // Close the file
   file.close();
+}
+
+int searchFile(const std::string &filePath) {
+  if (!std::filesystem::exists(filePath)) {
+    return 1;
+  }
+  return 0;
+}
+
+/************************************************
+ *                Picture taking
+ ***********************************************/
+
+std::vector<std::string> takeRowPictures(std::string boardType) {
+  std::vector<std::string> imgPaths;
+  std::vector<std::string> filenames;
+  std::string imgExtension = ".jpg";
+
+  for (int i = 0; i < 3; i++) {
+    filenames.push_back(boardType + "_" + std::to_string(i) + imgExtension);
+  }
+  for (int i = 0; i < 3; i++) {
+    imgPaths.push_back("../imgs/ELYOS/eval/" + filenames[i]);
+  }
+
+  std::string cameraComamnd = "libcamera-still --immediate -o ";
+
+  const char *commandPath_char;
+  std::string commandPath;
+  int returnCode;
+  for (const auto &path : imgPaths) {
+    commandPath = cameraComamnd + path;
+    commandPath_char = commandPath.c_str();
+    returnCode = system(commandPath_char);
+  }
+
+  return filenames;
+}
+
+std::string takePicture(std::string boardType) {
+  std::string imgPath;
+  std::string imgExtension = ".jpg";
+  std::string filename = boardType + imgExtension;
+  imgPath = "../imgs/ELYOS/eval/" + filename;
+
+  std::string cameraComamnd = "libcamera-still --immediate -o ";
+
+  const char *commandPath_char;
+  std::string commandPath = cameraComamnd + imgPath;
+  int returnCode;
+  commandPath_char = commandPath.c_str();
+  returnCode = system(commandPath_char);
+
+  return filename;
 }
 
 /************************************************

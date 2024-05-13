@@ -26,10 +26,165 @@
 
 #include "../include/PCB_inspection.hpp"
 #include "../include/aux_functions.hpp"
+#include "../include/coms.hpp"
 #include "../include/csv.hpp"
 
+#define WHITE_BACKGROUND_LOWER_LIMS                                            \
+  std::vector<int> { 50, 12, 15 }
+#define WHITE_BACKGROUND_UPPER_LIMS                                            \
+  std::vector<int> { 120, 225, 120 }
+
 /************************************************
- *              Preprocessing
+ *                 Main pipeline
+ ***********************************************/
+
+std::vector<std::pair<std::string, int>>
+automaticEvaluation(std::string boardType, std::string filename,
+                    bool displayResults) {
+  // Generate and verify the paths to the appropriate files to refer and
+  // evaluate
+  std::string refImagePath, compBoxesPath, compMaxLightPath;
+  std::string evalImagePath = "../imgs/ELYOS/eval/" + filename;
+  if (boardType == "ELYOS") {
+    refImagePath = "../imgs/ELYOS/ref/ELYOS_REF.jpg";
+    compBoxesPath = "../board/ELYOS/ELYOS_component_boxes.csv";
+    compMaxLightPath = "../board/ELYOS/ELYOS_component_maxLighting.csv";
+  }
+  // else if ()
+  else {
+    // Board does not exist
+    throw NotifyError("Error occurred during evaluation. Selected board type "
+                      "does not exist.");
+  }
+
+  if (searchFile(refImagePath))
+    throw NotifyError(
+        "Error occurred during evaluation. Could not find reference image.");
+  if (searchFile(evalImagePath))
+    throw NotifyError(
+        "Error occurred during evaluation. Could not find evaluate image.");
+  if (searchFile(compBoxesPath))
+    throw NotifyError("Error occurred during evaluation. Could not find "
+                      "component boxes CSV.");
+  if (searchFile(compMaxLightPath))
+    throw NotifyError("Error occurred during evaluation. Could not find "
+                      "component max light CSV.");
+
+  cv::Mat ref_img_RGB;
+  cv::Mat eval_img_RGB;
+  ref_img_RGB = cv::imread(refImagePath);
+  eval_img_RGB = cv::imread(evalImagePath);
+
+  cv::Mat ref_mask;
+  cv::Mat eval_mask;
+  ref_mask = getPCBmask(ref_img_RGB, WHITE_BACKGROUND_LOWER_LIMS,
+                        WHITE_BACKGROUND_UPPER_LIMS);
+  eval_mask = getPCBmask(eval_img_RGB, WHITE_BACKGROUND_LOWER_LIMS,
+                         WHITE_BACKGROUND_UPPER_LIMS);
+
+  std::vector<cv::Point> ref_corners;
+  ref_corners = findLargestContour(ref_mask);
+
+  std::vector<cv::Point> eval_corners;
+  eval_corners = findLargestContour(eval_mask);
+
+  cv::Mat noPersp_ref, noPersp_eval;
+  noPersp_ref = correctPerspective(ref_img_RGB, ref_corners);
+  noPersp_eval = correctPerspective(eval_img_RGB, eval_corners);
+
+  cv::Mat preprocessed_ref = preprocessImg(noPersp_ref);
+  cv::Mat preprocessed_eval = preprocessImg(noPersp_eval);
+
+  cv::Mat XOR_result;
+  cv::bitwise_xor(preprocessed_ref, preprocessed_eval, XOR_result);
+  noise_removal(XOR_result);
+
+  // Create and verify path to file with component box delimiters
+  io::CSVReader<5> compBoundBoxes(compBoxesPath);
+
+  std::vector<cv::Mat> imgBoxes;
+  imgBoxes = createImgBoxes(XOR_result, compBoundBoxes);
+
+  cv::Mat boxCanvas;
+  boxCanvas = makeCanvas(imgBoxes, 1600, 8);
+
+  io::CSVReader<2> maxLighitingVal(compMaxLightPath);
+
+  // Check if components are missing from their respective bounding boxes
+  std::vector<std::pair<std::string, int>> compSearchResults;
+  compSearchResults = verifyComponents(imgBoxes, maxLighitingVal);
+
+  if (displayResults) {
+    display_img(boxCanvas);
+    display_img(noPersp_ref);
+    display_img(noPersp_eval);
+    display_img(XOR_result);
+    printResults(compSearchResults);
+  }
+
+  std::string resultsPath = "../results/" + boardType + ".csv";
+  saveResultsCSV(compSearchResults, resultsPath);
+
+  cv::destroyAllWindows();
+
+  return compSearchResults;
+}
+
+/************************************************
+ *               Operation modes
+ ***********************************************/
+
+std::string rowMode(std::string boardType) {
+  std::vector<std::string> pictureNames;
+  pictureNames = takeRowPictures(boardType);
+
+  // Evaluate each picture
+  std::vector<std::vector<std::pair<std::string, int>>> results;
+  for (auto const &name : pictureNames) {
+    results.push_back(automaticEvaluation(boardType, name, false));
+  }
+
+  // Check for errors in PCB and build confirmation accordingly
+  std::string completionMsg = "Done";
+  if (checkResultsPCB(results[0]))
+    completionMsg = "_E";
+  else
+    completionMsg = "_G";
+  if (checkResultsPCB(results[1]))
+    completionMsg = completionMsg + "_E";
+  else
+    completionMsg = completionMsg + "_G";
+  if (checkResultsPCB(results[2]))
+    completionMsg = completionMsg + "_E";
+  else
+    completionMsg = completionMsg + "_G";
+
+  return completionMsg;
+}
+
+std::string oneMode(std::string boardType) {
+  // std::string pictureName;
+  // pictureName = takePicture(boardType);
+  std::string pictureName = "ELYOS.jpg";
+
+  // Evaluate each picture
+  std::vector<std::pair<std::string, int>> result;
+  result = automaticEvaluation(boardType, pictureName, false);
+
+  // Check for errors in PCB and build confirmation accordingly
+  std::string completionMsg = "Done";
+  if (checkResultsPCB(result))
+    completionMsg = "_E";
+  else
+    completionMsg = "_G";
+
+  completionMsg = completionMsg + "_X_X";
+
+  return completionMsg;
+}
+
+/************************************************
+ *                Preprocessing
  ***********************************************/
 
 cv::Mat preprocessImg(cv::Mat inputImg) {
@@ -205,7 +360,7 @@ std::vector<cv::Mat> createImgBoxes(cv::Mat inputImg,
     // Convert to BGR to be able to use countNonZero pixels
     cv::Mat tempClone_RGB;
     cv::cvtColor(tempClone, tempClone_RGB, cv::COLOR_GRAY2BGR);
-      
+
     boxImages.push_back(tempClone);
   }
 
@@ -220,7 +375,7 @@ verifyComponents(std::vector<cv::Mat> &compImgs,
 
   std::string compName;
   float maxLitPixels; // Max accepted percentage of lit pixels
-  int i = 0;        // Keep count of current component index
+  int i = 0;          // Keep count of current component index
 
   // Verify by calculating average intensity of each binary image and comparing
   // to the gives max values
@@ -228,7 +383,8 @@ verifyComponents(std::vector<cv::Mat> &compImgs,
     // Calculate average number of lit pixels
     int nonZeroPixels = cv::countNonZero(compImgs[i]);
     int totalPixels = compImgs[i].rows * compImgs[i].cols;
-    double percentageLitPixels = static_cast<double>(nonZeroPixels) / totalPixels * 100;
+    double percentageLitPixels =
+        static_cast<double>(nonZeroPixels) / totalPixels * 100;
 
     bool tempResult = percentageLitPixels <= maxLitPixels;
     std::pair<std::string, int> tempResultPair = {compName, tempResult};
@@ -237,4 +393,16 @@ verifyComponents(std::vector<cv::Mat> &compImgs,
   }
 
   return results;
+}
+
+/************************************************
+ *              Result verification
+ ***********************************************/
+
+bool checkResultsPCB(std::vector<std::pair<std::string, int>> results) {
+  for (const auto &comp : results) {
+    if (!comp.second)
+      return true;
+  }
+  return false;
 }

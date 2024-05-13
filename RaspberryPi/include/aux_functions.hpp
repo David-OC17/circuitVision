@@ -22,7 +22,15 @@
 #include <opencv2/imgproc.hpp>
 #include <opencv2/opencv.hpp>
 
+#include "../include/common.hpp"
+
 #include "csv.hpp"
+
+#define CLOSE_MASK_DEFAULT_REP 1
+
+/************************************************
+ *              Other aux functions
+ ***********************************************/
 
 /**
  * @brief Comparator function for std::vector<cv::Point>
@@ -31,13 +39,42 @@ bool comparePoints(const cv::Point &a, const cv::Point &b);
 
 /**
  * @brief Save the result pairs to a CSV with columns ComponentName,
- * IspectionResult.
+ * InspectionResult.
  */
 void saveResultsCSV(std::vector<std::pair<std::string, int>> &results,
-                    std::string filename = "../results.csv");
+                    std::string resultsPath = "../results/results.csv");
+
+/**
+ * @brief Check if the file exists in the filesystem, and return 1 if not;
+ */
+int searchFile(const std::string &filePath);
 
 /************************************************
- *                   PCB mask
+ *                Picture taking
+ ***********************************************/
+
+/**
+ * @brief Takes 3 pictures via libcamera-still, waiting for 3 seconds between each; uses the Raspberry Pi Camera.
+ *
+ * @param boardType Determines the names that the pictures will take, and the
+ * directory where they will be saved.
+ *
+ * @return Gives a vector with the names of the resulting images.
+ */
+std::vector<std::string> takeRowPictures(std::string boardType);
+
+/**
+ * @brief Takes one picture with the Raspberry Pi Camera.
+ *
+ * @param boardType Determines the name that the picture takes, and the
+ * directory where it will be saved.
+ *
+ * @return Gives the name of the resulting image.
+ */
+std::string takePicture(std::string boardType);
+
+/************************************************
+ *                  PCB mask
  ***********************************************/
 
 /**
@@ -49,7 +86,7 @@ void fillPCBholes(cv::Mat &inputImg);
  * @brief Fill holes of PCB outline, starting from the center, creating a solid
  * rectangle.
  */
-void floodMask(cv::Mat &inputImg, int width = 2560, int height = 1600);
+void floodMask(cv::Mat &inputImg, int width = SCREEN_WIDTH, int height = SCREEN_HEIGHT);
 
 /**
  * @brief Close holes in mask by morphological closing operation.
@@ -58,7 +95,7 @@ void floodMask(cv::Mat &inputImg, int width = 2560, int height = 1600);
  * @param repetitions Number of times to repeat closing operation
  * (default = 1)
  */
-void closeMask(cv::Mat &inputImg, int repetitions = 1);
+void closeMask(cv::Mat &inputImg, int repetitions = CLOSE_MASK_DEFAULT_REP);
 
 /************************************************
  *            Displaying and printing
@@ -78,8 +115,8 @@ void printResults(
  * @param width Width of image to display, in pixels.
  * @param height Height of image to display, in pixels.
  */
-void display_img(cv::Mat &original_img, bool resize = true, int width = 2560,
-                 int height = 1600);
+void display_img(cv::Mat &original_img, bool resize = true, int width = SCREEN_WIDTH,
+                 int height = SCREEN_HEIGHT);
 
 /**
  * @brief Resize images and display to two separate windows.
@@ -91,7 +128,7 @@ void display_img(cv::Mat &original_img, bool resize = true, int width = 2560,
  * @param height Height of image to display, in pixels.
  */
 void display_imgs(cv::Mat &original_img, cv::Mat &preprocessed_img, bool resize,
-                  int width = 2560, int height = 1600);
+                  int width = SCREEN_WIDTH, int height = SCREEN_HEIGHT);
 
 /**
  * @brief Print to stdio components with their respective placement in mm

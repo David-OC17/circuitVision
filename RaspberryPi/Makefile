@@ -7,10 +7,10 @@ INCLUDE_DIR = ./include
 CXXFLAGS += -I$(INCLUDE_DIR)
 
 # Linker flags
-LDFLAGS = -L/usr/local/lib -lopencv_core -lopencv_imgcodecs -lopencv_imgproc -lopencv_highgui 
+LDFLAGS = -L/usr/local/lib -lopencv_core -lopencv_imgcodecs -lopencv_imgproc -lopencv_highgui -lwiringPi
 
 # Source file
-SRCS = src/main.cpp src/PCB_inspection.cpp src/aux_functions.cpp
+SRCS = src/main.cpp src/PCB_inspection.cpp src/aux_functions.cpp src/coms.cpp
 SRCS_TEST1= test/contour_finder_test.cpp src/PCB_inspection.cpp
 OBJS = $(SRCS:.cpp=.o)
 

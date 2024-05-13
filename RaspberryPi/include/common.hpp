@@ -1,0 +1,7 @@
+#ifndef PCB_INS_COMMON
+#define PCB_INS_COMMON
+
+#define SCREEN_HEIGHT 1600
+#define SCREEN_WIDTH 2560
+
+#endif // PCB_INS_COMMON
