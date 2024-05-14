@@ -45,9 +45,26 @@ void saveResultsCSV(std::vector<std::pair<std::string, int>> &results,
                     std::string resultsPath = "../results/results.csv");
 
 /**
- * @brief Check if the file exists in the filesystem, and return 1 if not;
+ * @brief Check if the file exists in the filesystem.
+ *
+ * @return Gives 0 back if the file exists, and 1 otherwise;
  */
 int searchFile(const std::string &filePath);
+
+/**
+ * @brief Check if the command exists to be called from the command line.
+ * Throws a generic NotifyError with the appropriate message.
+ */
+void searchCommand(std::string command);
+
+/**
+ * @brief Returns the biggest number identifies of the existing images
+ * inside the given folder and with the given boardType.
+ *
+ * @param boardType Specifies which type of board is going to be evaluated.
+ * @param imgsPath Is the path to the folder containing the images where to look.
+ */
+int findLastImageNubmer(std::string boardType, std::string imgsPath);
 
 /************************************************
  *                Picture taking

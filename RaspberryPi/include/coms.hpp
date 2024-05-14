@@ -17,7 +17,9 @@
  * orchestration within the Raspberry Pi modules.
  */
 
-#include <exception>
+#ifndef COMS_H
+#define COMS_H
+
 #include <string>
 #include <utility>
 
@@ -28,20 +30,5 @@
  */
 std::pair<int, int> serialComsInit(int baudRate, std::string serialDevice);
 
-/************************************************
- *              Exception handling
- ***********************************************/
 
-/**
- * @brief Class to process generic errors that stop the execution of the
- * evaluation process
- */
-class NotifyError : public std::exception {
-public:
-  NotifyError(const std::string &message) : message(message) {}
-
-  const char *what() const noexcept override { return message.c_str(); }
-
-private:
-  std::string message;
-};
+#endif // COMS_H

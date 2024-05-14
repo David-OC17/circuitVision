@@ -16,60 +16,68 @@
  */
 
 #include <string>
-#include <wiringPi.h>
-#include <wiringSerial.h>
-
-#include <opencv2/imgproc.hpp>
-#include <opencv2/opencv.hpp>
+#include <utility>
+// #include <wiringPi.h>
+// #include <wiringSerial.h>
 
 #include "../include/PCB_inspection.hpp"
 #include "../include/coms.hpp"
 
-#define BOARD_TYPE "ELYOS"
-#define SERIAL_DEVICE "/dev/ttyS0"
+#include "../test/include/coms_test.hpp"
+
+#define BOARD_TYPE std::string("ELYOS")
+#define SERIAL_DEVICE std::string("/dev/ttyS0")
 #define BAUD_RATE 9600
 
 /**
  * Test missing for the following functions/portions of the code:
  * - serialComsInit() and general communication via UART (all wiringPi related)
- * - takeRowPictures() and takePicture() actually taking and saving pictures
+ * --> test with RedPitaya
  *
- * Implementation is missing for:
- * - backupPictures()
+ * - takeRowPictures() and takePicture(): test on Raspberry Pi
  *
  * Other needed changes:
- * - For the actual use of this code, change the SERIAL_DEVICE and verify BAUD_RATE
+ * - For the actual use of this code, change the SERIAL_DEVICE and verify
+ * BAUD_RATE
  */
 
 int main() {
+  std::string boardType = BOARD_TYPE;
+  std::string serialDevice = SERIAL_DEVICE;
+  int baudRate = BAUD_RATE;
+
   // Initialize communication port
-  std::pair<int, int> comsInfo = serialComsInit(BAUD_RATE, SERIAL_DEVICE);
+  std::pair<int, int> comsInfo = serialComsInit_test(baudRate, serialDevice);
   if (comsInfo.first) {
     throw NotifyError(
         "Error occurred during serial communication initialization.");
   }
   char dataUART;
-  int serialPort = comsInfo.second;
+  const int serialPort = comsInfo.second;
 
   while (1) {
-    if (serialDataAvail(serialPort)) {
-      dataUART = serialGetchar(serialPort); // receive character serially
+    if (serialDataAvail_test(serialPort)) {
+      dataUART = serialGetchar_test(serialPort); // receive character serially
       std::string completionMsg;
 
       switch (dataUART) {
       case 'R':
-        completionMsg = rowMode(BOARD_TYPE);
+        completionMsg = rowMode(boardType);
         break;
 
       case 'O':
-        completionMsg = oneMode(BOARD_TYPE);
+        completionMsg = oneMode(boardType);
         break;
+
+      default:
+        throw NotifyError("The received instruction is not valid.");
       }
 
       // Divide completion message into chars and send
       const char *completionMsg_chars = completionMsg.c_str();
       for (int i = 0; i < strlen(completionMsg_chars); i++) {
-        serialPutchar(serialPort, completionMsg_chars[i]);
+        // serialPutchar(serialPort, completionMsg_chars[i]);
+        serialPutchar_test(serialPort, completionMsg_chars[i]);
       }
     }
   }

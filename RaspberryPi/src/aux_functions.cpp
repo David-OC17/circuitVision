@@ -20,10 +20,12 @@
 #include <filesystem>
 #include <fstream>
 #include <iostream>
+#include <regex>
 #include <string>
 #include <utility>
 
 #include "../include/aux_functions.hpp"
+#include "../include/common.hpp"
 #include "../include/csv.hpp"
 
 #include <opencv2/imgproc.hpp>
@@ -64,6 +66,39 @@ int searchFile(const std::string &filePath) {
   return 0;
 }
 
+void searchCommand(std::string command){
+  std::string checkCommand = "which " + command;
+
+  if(system(checkCommand.c_str())) throw NotifyError("Command " + command + " not found in command line.");
+}
+
+int findLastImageNubmer(std::string boardType) {
+  std::string imgsDirectory;
+  int highest_x = 0;
+
+  if (boardType == "ELYOS")
+    imgsDirectory = "../imgs/ELYOS/eval/";
+  // else if ();
+  else
+    throw NotifyError("Error occurred while finding last index for taken "
+                      "images. Board type not valid.");
+
+  std::regex imgPattern("ELYOS_([0-9]+)\\.jpg");
+
+  for (const auto &entry : std::filesystem::directory_iterator(imgsDirectory)) {
+    std::smatch match;
+    std::string filename = entry.path().string();
+    if (std::regex_search(filename, match, imgPattern)) {
+      int number = std::stoi(match[1]);
+      if (number > highest_x) {
+        highest_x = number;
+      }
+    }
+  }
+
+  return highest_x;
+}
+
 /************************************************
  *                Picture taking
  ***********************************************/
@@ -72,14 +107,22 @@ std::vector<std::string> takeRowPictures(std::string boardType) {
   std::vector<std::string> imgPaths;
   std::vector<std::string> filenames;
   std::string imgExtension = ".jpg";
+  int imgNumber = findLastImageNubmer(boardType);
 
   for (int i = 0; i < 3; i++) {
-    filenames.push_back(boardType + "_" + std::to_string(i) + imgExtension);
+    imgNumber++;
+    filenames.push_back(boardType + "_" +
+                        std::to_string(imgNumber) + imgExtension);
   }
   for (int i = 0; i < 3; i++) {
     imgPaths.push_back("../imgs/ELYOS/eval/" + filenames[i]);
   }
 
+  std::cout << filenames[0] << std::endl;
+  std::cout << filenames[1] << std::endl;
+  std::cout << filenames[2] << std::endl;
+
+  searchCommand("libcamera-still");
   std::string cameraComamnd = "libcamera-still --immediate -o ";
 
   const char *commandPath_char;
@@ -97,9 +140,13 @@ std::vector<std::string> takeRowPictures(std::string boardType) {
 std::string takePicture(std::string boardType) {
   std::string imgPath;
   std::string imgExtension = ".jpg";
-  std::string filename = boardType + imgExtension;
+  std::string imgNumber = std::to_string(findLastImageNubmer(boardType));
+  std::string filename = boardType + "_" + imgNumber + imgExtension;
   imgPath = "../imgs/ELYOS/eval/" + filename;
 
+  std::cout << filename << std::endl;
+
+  searchCommand("libcamera-still");
   std::string cameraComamnd = "libcamera-still --immediate -o ";
 
   const char *commandPath_char;

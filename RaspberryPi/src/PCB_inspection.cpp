@@ -26,7 +26,6 @@
 
 #include "../include/PCB_inspection.hpp"
 #include "../include/aux_functions.hpp"
-#include "../include/coms.hpp"
 #include "../include/csv.hpp"
 
 #define WHITE_BACKGROUND_LOWER_LIMS                                            \
@@ -163,9 +162,8 @@ std::string rowMode(std::string boardType) {
 }
 
 std::string oneMode(std::string boardType) {
-  // std::string pictureName;
-  // pictureName = takePicture(boardType);
-  std::string pictureName = "ELYOS.jpg";
+  std::string pictureName;
+  pictureName = takePicture(boardType);
 
   // Evaluate each picture
   std::vector<std::pair<std::string, int>> result;
