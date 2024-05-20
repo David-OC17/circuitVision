@@ -10,11 +10,11 @@
  * the License, or (at your option) any later version.
  *
  * @section DESCRIPTION
-*
-* This header file specifies the functions available for the PCB
-* AOI system, including a preprocessing and a fault finding
-* section.
-*/
+ *
+ * This header file specifies the functions available for the PCB
+ * AOI system, including a preprocessing and a fault finding
+ * section.
+ */
 
 #ifndef PCB_INSPECTION_H
 #define PCB_INSPECTION_H
@@ -25,10 +25,61 @@
 #include <string>
 #include <vector>
 
+#include "common.hpp"
 #include "csv.hpp"
 
 /************************************************
- *              Preprocessing
+ *                 Main pipeline
+ ***********************************************/
+
+/**
+ * @brief Main pipeline function for image evaluation.
+ *
+ * @param boarType Specifies the board type that wants to be configured. Must be
+ * a preconfigured board.
+ * @param filename The name that the file to evaluate takes.
+ * @param displayResults Whether to show the final and intermediate results to
+ * the monitor connected to the Raspberry Pi.
+ *
+ * @return Vector of pairs containing the
+ * name of the component name and its evaluation result as a integer
+ */
+std::vector<std::pair<std::string, int>>
+automaticEvaluation(std::string boardType, std::string filename,
+                    bool displayResults);
+
+/************************************************
+ *               Operation modes
+ ***********************************************/
+
+/**
+ * @brief Takes 3 pictures, evaluates them and generates a completion message.
+ *
+ * The following is an example of a completion message Done-E_G_G
+ * The message specifies that the evaluation was completed, followed by three
+ * letters. These letters tell which of the board passed the evaluation and
+ * which did not.
+ *
+ * E: error in board.
+ * G: good board, no errors.
+ */
+std::string rowMode(std::string boardType);
+
+/**
+ * @brief Takes one picture, evaluate it and generates a completion message.
+ *
+ * The following is an example of a completion message Done-E_X_X
+ * The message specifies that the evaluation was completed, followed by three
+ * letters. The first letter tells whether the board passed the evaluation.
+ *
+ * E: error in board.
+ * G: good board, no errors.
+ * X: no board to evaluate.
+ */
+std::string oneMode(std::string boardType);
+
+/************************************************
+ *                 Preprocessing
  ***********************************************/
 
 /**
@@ -47,7 +98,8 @@ cv::Mat preprocessImg(cv::Mat inputImg);
  * @param height Size in y of the screen.
  */
 cv::Mat correctPerspective(cv::Mat inputImg, std::vector<cv::Point> corners,
-                           int width = 2560, int height = 1600);
+                           int width = SCREEN_WIDTH,
+                           int height = SCREEN_HEIGHT);
 
 /************************************************
  *               Fault finding
@@ -99,7 +151,7 @@ void noise_removal(cv::Mat &XOR_img, int closure_iterations = 3,
  * @param inputImg Binary image in which to find largest rectangle points.
  * @return A vector of the 4 resulting cv::Point.
  */
-std::vector<cv::Point> findLargestContour(cv::Mat inputImg, bool print=false);
+std::vector<cv::Point> findLargestContour(cv::Mat inputImg, bool print = false);
 
 /**
  * @brief Filter specific color range and return resulting mask
@@ -133,5 +185,15 @@ std::vector<cv::Mat> createImgBoxes(cv::Mat inputImg,
  */
 std::vector<std::pair<std::string, int>>
 verifyComponents(std::vector<cv::Mat> &compImgs, io::CSVReader<2> &maxLighting);
+
+/************************************************
+ *              Result verification
+ ***********************************************/
+
+/**
+ * @brief Checks if any of the components presented a fault, and returns true if
+ * so.
+ */
+bool checkResultsPCB(std::vector<std::pair<std::string, int>> results);
 
 #endif // PCB_INSPECTION_H

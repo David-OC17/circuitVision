@@ -12,84 +12,75 @@
  *
  * @section DESCRIPTION
  *
- * This document contains the main implementation for the
- * developed AOI system for PCB. The system is setup to work with
- * a specific PCB board, and must be modified in order to support
- * others.
+ * This document contains the main implementation for the...
  */
 
-#include <opencv2/imgproc.hpp>
-#include <opencv2/opencv.hpp>
+#include <string>
+#include <utility>
+// #include <wiringPi.h>
+// #include <wiringSerial.h>
 
 #include "../include/PCB_inspection.hpp"
-#include "../include/aux_functions.hpp"
+#include "../include/coms.hpp"
+
+#include "../test/include/coms_test.hpp"
+
+#define BOARD_TYPE std::string("ELYOS")
+#define SERIAL_DEVICE std::string("/dev/ttyS0")
+#define BAUD_RATE 9600
+
+/**
+ * Test missing for the following functions/portions of the code:
+ * - serialComsInit() and general communication via UART (all wiringPi related)
+ * --> test with RedPitaya
+ *
+ * - takeRowPictures() and takePicture(): test on Raspberry Pi
+ *
+ * Other needed changes:
+ * - For the actual use of this code, change the SERIAL_DEVICE and verify
+ * BAUD_RATE
+ */
 
 int main() {
-  // Import image and create gray copy
-  cv::Mat ref_img_RGB = cv::imread("../imgs/best_conditions/ELYOS_PCB_0.jpg");
-  cv::Mat eval_img_RGB =
-      cv::imread("../imgs/best_conditions/ELYOS_PCB_4_missing_comp2.jpg");
+  std::string boardType = BOARD_TYPE;
+  std::string serialDevice = SERIAL_DEVICE;
+  int baudRate = BAUD_RATE;
 
-  // Detect PCB and create mask
-  cv::Mat ref_mask;
-  cv::Mat eval_mask;
-  std::vector<int> lowerLimits = {50, 12, 15};
-  std::vector<int> upperLimits = {120, 225, 120};
+  // Initialize communication port
+  std::pair<int, int> comsInfo = serialComsInit_test(baudRate, serialDevice);
+  if (comsInfo.first) {
+    throw NotifyError(
+        "Error occurred during serial communication initialization.");
+  }
+  char dataUART;
+  const int serialPort = comsInfo.second;
 
-  ref_mask = getPCBmask(ref_img_RGB, lowerLimits, upperLimits);
-  eval_mask = getPCBmask(eval_img_RGB, lowerLimits, upperLimits);
+  while (1) {
+    if (serialDataAvail_test(serialPort)) {
+      dataUART = serialGetchar_test(serialPort); // receive character serially
+      std::string completionMsg;
 
-  // Get corners for transformation
-  std::vector<cv::Point> ref_corners;
-  ref_corners = findLargestContour(ref_mask);
+      switch (dataUART) {
+      case 'R':
+        completionMsg = rowMode(boardType);
+        break;
 
-  std::vector<cv::Point> eval_corners;
-  eval_corners = findLargestContour(eval_mask);
+      case 'O':
+        completionMsg = oneMode(boardType);
+        break;
 
-  // Correct perspective on reference and evaluate image
-  cv::Mat noPersp_ref, noPersp_eval;
-  noPersp_ref = correctPerspective(ref_img_RGB, ref_corners);
-  noPersp_eval = correctPerspective(eval_img_RGB, eval_corners);
+      default:
+        throw NotifyError("The received instruction is not valid.");
+      }
 
-  // Apply preprocessing to both images
-  cv::Mat preprocessed_ref = preprocessImg(noPersp_ref);
-  cv::Mat preprocessed_eval = preprocessImg(noPersp_eval);
-
-  // XOR evaluate and reference image
-  cv::Mat XOR_result;
-  cv::bitwise_xor(preprocessed_ref, preprocessed_eval, XOR_result);
-  noise_removal(XOR_result);
-
-  // Read bounding boxes
-  io::CSVReader<5> compBoundBoxes("../board/ELYOS_component_boxes.csv");
-  // printCompBoundBoxes(compBoundBoxes);
-
-  // Create bounding box images
-  std::vector<cv::Mat> imgBoxes;
-  imgBoxes = createImgBoxes(XOR_result, compBoundBoxes);
-
-  // Display all image boxes
-  cv::Mat boxCanvas;
-  boxCanvas = makeCanvas(imgBoxes, 1600, 8);
-  display_img(boxCanvas);
-
-  // Read max lighting values for boxes
-  io::CSVReader<2> maxLighitingVal("../board/ELYOS_component_maxLighting.csv");
-
-  // Check if components are missing from their respective bounding boxes 
-  std::vector<std::pair<std::string, int>> compSearchResults;
-  compSearchResults = verifyComponents(imgBoxes, maxLighitingVal);
-
-  // Display reference and evaluate iamge, XOR result, and results 
-  // display_img(noPersp_ref);
-  // display_img(noPersp_eval);
-  // display_img(XOR_result);
-  // printResults(compSearchResults);
- 
-  // Save results to CSV file  
-  saveResultsCSV(compSearchResults);
-
-  cv::destroyAllWindows();
+      // Divide completion message into chars and send
+      const char *completionMsg_chars = completionMsg.c_str();
+      for (int i = 0; i < strlen(completionMsg_chars); i++) {
+        // serialPutchar(serialPort, completionMsg_chars[i]);
+        serialPutchar_test(serialPort, completionMsg_chars[i]);
+      }
+    }
+  }
 
   return EXIT_SUCCESS;
 }
