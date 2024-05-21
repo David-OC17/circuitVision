@@ -1,3 +1,7 @@
+# MCUXpresso project file
+/KL25/.metadata
+/KL25/.mcuxpressoide_packages_support
+
 # Bin from project
 /bin
 
