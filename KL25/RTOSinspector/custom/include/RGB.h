@@ -1,16 +1,19 @@
 #ifndef RGB_H
 #define RGB_H
 
-/////////// Includes ///////////
-#include "common.h"
+#include <stdint.h>
 
-//////////// MACROS ////////////
+/************************************************
+ *                   Macros 
+ ***********************************************/
 #define TIME_TO_BLINK_MS 1000    // Adjust as needed
 #define GREEN_LED_PORT   GPIOB
 #define BLUE_LED_PORT    GPIOD
 #define RED_LED_PORT     GPIOB
 
-/////////// Variables //////////
+/************************************************
+ *                   Variables
+ ***********************************************/
 enum RGB_LED {
 	RED = 0x40000,
 	GREEN = 0x80000,
@@ -20,9 +23,9 @@ enum RGB_LED {
 	YELLOW = 0x40000 | 0x80000
 };
 
-////////// Functions  //////////
-void RGB_Init(void);
-
+/************************************************
+ *                  Functions 
+ ***********************************************/
 // For all LEDs in RGB LED
 void RGB_On(void);
 void RGB_Off(void);

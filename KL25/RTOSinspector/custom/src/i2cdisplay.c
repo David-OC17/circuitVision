@@ -1,7 +1,8 @@
-/////////// Includes ///////////
 #include "../include/i2cdisplay.h"
 
-/////////// Variables //////////
+/************************************************
+ *                 Variables 
+ ***********************************************/
 LCD_Config_Struct default_config = {
     .address = addr2, .rows = 2, .cols = 16, .backlight = LCD_BACKLIGHT};
 
@@ -10,7 +11,9 @@ I2C_Type *hi2c;
 // Timing variable
 uint64_t *millisecs;
 
-/////////// Functions //////////
+/************************************************
+ *                 Functions 
+ ***********************************************/
 // Default Init
 RETURN_TYPE LCD_DefaultInit(I2C_Type *handler, uint64_t *milliseconds) {
   hi2c = handler;
@@ -73,8 +76,6 @@ RETURN_TYPE LCD_Init(LCD_Config_Struct *configStruct) {
   Command(LCD_ENTRYMODESET | configStruct->displayMode |
               configStruct->backlight,
           configStruct->address);
-  // Home
-  // Home();
 
   return NO_ERROR;
 }
@@ -107,7 +108,9 @@ RETURN_TYPE Send(uint8_t value, uint8_t mode, uint16_t address) {
   return Write4Bits((lownib) | mode, address);
 }
 
-////// HIGH LEVEL COMMANDS! - For the User  //////
+/************************************************
+ *          High level commands - User 
+ ***********************************************/
 RETURN_TYPE Clear(void) {
   Command(LCD_CLEARDISPLAY | default_config.backlight,
           default_config.address); // Clear and set cursor position to 0
@@ -131,7 +134,9 @@ RETURN_TYPE SetCursor(uint8_t col, uint8_t row) {
                  default_config.address);
 }
 
-////// Display configuring functions //////
+/************************************************
+ *         Display configuring functions 
+ ***********************************************/
 RETURN_TYPE Display(void) {
   default_config.displayControl |= LCD_DISPLAYON;
   return Command(LCD_DISPLAYCONTROL | default_config.displayControl |

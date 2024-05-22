@@ -1,14 +1,17 @@
 #ifndef STEPPER_H
 #define STEPPER_H
 
-/////////// Includes ///////////
-#include "common.h"
+#include <stdint.h>
 
-//////////// MACROS ////////////
+/************************************************
+ *                   Macros 
+ ***********************************************/
 #define CLOCKWISE 1
 #define COUNTERCLOCKWISE 0
 
-/////////// Variables //////////
+/************************************************
+ *                   Variables
+ ***********************************************/
 typedef struct {
   uint8_t stp_pin;
   uint8_t dir_pin;
@@ -31,7 +34,9 @@ enum StepResolution {
   SIXTEENTH_STEP = 0x07
 };
 
-////////// Functions  //////////
+/************************************************
+ *                  Functions 
+ ***********************************************/
 Stepper CreateStepper(uint32_t, PORT_Type *, uint32_t, PORT_Type *, uint32_t,
                       PORT_Type *);
 void SetStepperSettings(Stepper *, uint8_t, uint32_t, uint16_t);

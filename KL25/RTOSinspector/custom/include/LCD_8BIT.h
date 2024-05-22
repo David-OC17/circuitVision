@@ -1,10 +1,9 @@
 #ifndef LCD8_H
 #define LCD8_H
 
-/////////// Includes ///////////
-#include "common.h"
-
-//////////// MACROS ////////////
+/************************************************
+ *                   Macros
+ ***********************************************/
 // This should vary depending on the LCD8 connections
 #define RS 0x04 /* PTA2 mask */
 #define RW 0x10 /* PTA4 mask */
@@ -23,7 +22,9 @@
 #define LCD8_BLINK_HOME 0x0F
 #define LCD8_NO_BLINK (0x08) & ~1
 
-/////////// Variables //////////
+/************************************************
+ *                   Variables
+ ***********************************************/
 typedef struct {
   // LCD8 data pins	// LCD8 PORTS
   uint8_t d0_pin;
@@ -58,7 +59,9 @@ extern GPIO_Type *d0_gpio, *d1_gpio, *d2_gpio, *d3_gpio, *d4_gpio, *d5_gpio,
 // GPIOs for additional pins
 extern GPIO_Type *enable_gpio, *rw_gpio, *rs_gpio;
 
-////////// Functions  //////////
+/************************************************
+ *                  Functions
+ ***********************************************/
 void LCD8_Init(void);
 void LCD8_Command(unsigned char);
 void LCD8_CommandNoWait(unsigned char);

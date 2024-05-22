@@ -1,19 +1,4 @@
-// FreeRTOS refactor needed!
-
 #include "../include/keypad.h"
-
-void keypad_init(void) {
-  SIM->SCGC5 |= 0x0800;  /* enable clock to Port C */
-  PORTC->PCR[0] = 0x103; /* PTD0, GPIO, enable pullup*/
-  PORTC->PCR[1] = 0x103; /* PTD1, GPIO, enable pullup*/
-  PORTC->PCR[2] = 0x103; /* PTD2, GPIO, enable pullup*/
-  PORTC->PCR[3] = 0x103; /* PTD3, GPIO, enable pullup*/
-  PORTC->PCR[4] = 0x103; /* PTD4, GPIO, enable pullup*/
-  PORTC->PCR[5] = 0x103; /* PTD5, GPIO, enable pullup*/
-  PORTC->PCR[6] = 0x103; /* PTD6, GPIO, enable pullup*/
-  PORTC->PCR[7] = 0x103; /* PTD7, GPIO, enable pullup*/
-  PTC->PDDR = 0x0F;      /* make PTD7-0 as input pins */
-}
 
 char keypad_getkey(void) {
   int row, col;

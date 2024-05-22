@@ -1,11 +1,11 @@
 #ifndef I2CDisplay
 #define I2CDisplay
 
-/////////// Includes ///////////
-#include "common.h"
+#include <stdint.h>
 
-//////////// MACROS ////////////
-// commands
+/************************************************
+ *                   Commands 
+ ***********************************************/
 #define LCD_CLEARDISPLAY 0x01
 #define LCD_RETURNHOME 0x02
 #define LCD_ENTRYMODESET 0x04
@@ -15,13 +15,17 @@
 #define LCD_SETCGRAMADDR 0x40
 #define LCD_SETDDRAMADDR 0x80
 
-// flags for display entry mode
+/************************************************
+ *        Flags for display entry mode
+ ***********************************************/
 #define LCD_ENTRYRIGHT 0x00
 #define LCD_ENTRYLEFT 0x02
 #define LCD_ENTRYSHIFTINCREMENT 0x01
 #define LCD_ENTRYSHIFTDECREMENT 0x00
 
-// flags for display on/off control
+/************************************************
+ *       Flags for display on/off control
+ ***********************************************/
 #define LCD_DISPLAYON 0x04
 #define LCD_DISPLAYOFF 0x00
 #define LCD_CURSORON 0x02
@@ -29,13 +33,17 @@
 #define LCD_BLINKON 0x01
 #define LCD_BLINKOFF 0x00
 
-// flags for display/cursor shift
+/************************************************
+ *         Flags for display/cursor shift
+ ***********************************************/
 #define LCD_DISPLAYMOVE 0x08
 #define LCD_CURSORMOVE 0x00
 #define LCD_MOVERIGHT 0x04
 #define LCD_MOVELEFT 0x00
 
-// flags for function set
+/************************************************
+ *          Flags for function set
+ ***********************************************/
 #define LCD_8BITMODE 0x10
 #define LCD_4BITMODE 0x00
 #define LCD_2LINE 0x08
@@ -43,7 +51,9 @@
 #define LCD_5x10DOTS 0x04
 #define LCD_5x8DOTS 0x00
 
-// flags for backlight control
+/************************************************
+ *           Flags for backlight control
+ ***********************************************/
 #define LCD_BACKLIGHT 0x08
 #define LCD_NOBACKLIGHT 0x00
 
@@ -55,10 +65,14 @@
 #define NO_ERROR 0
 #define ERROR 1
 
-// I2C MACROS
+/************************************************
+ *                 I2C Macros 
+ ***********************************************/
 #define I2C_TIMEOUT_MS 100
 
-/////////// Variables //////////
+/************************************************
+ *                   Variables
+ ***********************************************/
 // Config struct
 typedef struct {
   uint16_t address;
@@ -78,7 +92,9 @@ enum LCD_ADDRESS { addr1 = 0x3F, addr2 = 0x27 };
 extern I2C_Type *hi2c;
 extern uint64_t *millisecs;
 
-////////// Functions  //////////
+/************************************************
+ *                  Functions 
+ ***********************************************/
 RETURN_TYPE LCD_DefaultInit(I2C_Type *, uint64_t *);
 RETURN_TYPE LCD_Init(LCD_Config_Struct *);
 RETURN_TYPE Write4Bits(uint8_t, uint16_t);

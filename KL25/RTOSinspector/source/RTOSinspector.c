@@ -12,7 +12,6 @@
 /************************************************
  *                Extra imports
  ***********************************************/
-#include <stdbool.h>
 #include "../../include/common.h"
 #include "../../include/clocks.h"
 #include "../../include/i2cdisplay.h"
@@ -28,31 +27,64 @@
 
 const int keyboardInputPin = 10;
 
+
+/************************************************
+ *           Mutexes and semaphores
+ ***********************************************/
+static SemaphoreHandle_t evalResults_mux;
+
+static SemaphoreHandle_t uartOutBuffer_mux;
+static SemaphoreHandle_t uartInBuffer_mux;
+
+static SemaphoreHandle_t builtinLED_mux;
+
 /************************************************
  *         Global variables and queues
  ***********************************************/
-static char operationMode; // Default to OnePCB
-static char keyboardInput;
+//////////   Steppers    /////////
+static Steppers stepperMotors;
 
-struct moveInstruction{
-	bool direction; // true:x, false:y
-	bool velocity; // true:fast, false:slow
-	unsigned int distance_mm;
-};
+const int steppperQueue_maxLen = 6;
+static QueueHandle_t stepperXQueue;
+static QueueHandle_t stepperYQueue;
 
-static char *evalResult; // Format: XX_XXX_XXX_XXX...
+static uint64_t stepperAux_x = 0;
+static uint64_t stepperAux_y = 0;
+
+
+//////////     ADC       /////////
+static uint16_t ADCres1 = 0, ADCres2 = 0;
+static uint64_t ADCaux = 0;
+
+//////////   Systick    /////////
+static const uint64_t *systicks;
+
+//////////    UART     /////////
+static char uartOutBuffer[50];
+static char uartInBuffer[50]; // Results info from RaspPi
 static int inputReceived = 0; // 0:not received, 1:received
 
-// Other useful constants and variables
-const TickType_t delay500ms = 500 / portTICK_PERIOD_MS; // Delay of 500ms
+//////////   Keypad    /////////
+static char operationMode;
+static char keypadInput;
+static int  keypadInputAvailable = 0; // Flag for when a change happens in
 
-// Stepper motor instruction queue
-const int stepInsQueue_maxLen = 6;
-static QueueHandle_t stepperInsQueue;
+//////////    LCD     /////////
+static const uint64_t printTime_aux = 0;
+
+
+//////////   Other    /////////
+static const uint64_t *systicks;
+
 
 /************************************************
  *         		 Task functions
  ***********************************************/
+
+/**
+ * @brief Display menu message to LCD, wait for input,
+ * send operation mode to RaspPi via UART.
+ */
 void userSelectMode(void *evalResults_mux){
 	// Write menu to LCD print variable
 	xSemaphoreTake(evalResults_mux, portMAX_DELAY);
@@ -61,15 +93,39 @@ void userSelectMode(void *evalResults_mux){
 	vTaskDelay( 500 / portTICK_RATE_MS ); // Let the LCD task run
 
 	// Wait for the user to type the mode
+	while(!keypadInputAvailable){
+		vTaskDelay( 500 / portTICK_RATE_MS );
+	}
 
 	// Sends mode char via UART to Raspberry Pi
+
+	// remove UARTsend from suspension
+	// wait for the task to complete
+	// put UARTsend back to suspension
 }
 
-void monitorKeyboard(void){
+/**
+ * @brief Perform thread safe UART send operation.
+ * Acquire uartOutBuffer_mux, pass message char by char,
+ * release the mutex.
+ */
+void UARTsend(void){
+	xSemaphoreTake(uartOutBuffer_mux, portMAX_DELAY);
 
+	for(uint8_t i=0; i < strlen(uartOutBuffer); i++){
+	  printTime_aux = *systicks;
+	  UART0->D = uart_c[i];
+	  while(!(UART0->S1 & 0x40)){  // Wait for the TX buffer to be empty
+		  if(*systicks - print_aux >= UART_TIMEOUT_MS * conv_factor) break;
+	  }
+	}
+
+	xSemaphoreGive(uartOutBuffer_mux);
 }
 
-// Stop handler as a task (used by all stopping interruptions)
+/**
+ * @brief Stop handler as a task. Used by all stopping interruptions.
+ */
 void stopRestartAll(void){
 	// Suspend motor movement, calculation of instructions
 
@@ -81,39 +137,188 @@ void stopRestartAll(void){
 	// Allow user to select mode again
 }
 
-void moveStepperMotor(void){
-	moveInstruction currentIns;
+/**
+ * @brief Removes the move instructions from the stepperXQueue and
+ * send it to the stepper X motor.
+ */
+void moveXStepperMotor(void){
+	Stepper stepperXins;
 
 	// Send available instruction to motors
-	if(xQueueReceive(stepperInsQueue, (void *) &currentIns, 0)){
-		// MISSING LOGIC
+	if(xQueueReceive(stepperXQueue, &stepperXins, 0)){
+		if(*systicks - stepperAux_x >= TIME_TO_RUN_STEPPER * conv_factor){
+			RunStepper(&stepperXins);
+			stepperAux_x = *systicks;
+		}
 	}
 }
 
-// Calculate distance to move in x and y directions, in mm
+/**
+ * @brief Removes the move instructions from the stepperYQueue and
+ * send it to the stepper Y motor.
+ */
+void moveYStepperMotor(void){
+	Stepper stepperYins;
+
+	// Send available instruction to motors
+	if(xQueueReceive(stepperYQueue, &stepperYins, 0)){
+		if(*systicks - stepperAux_y >= TIME_TO_RUN_STEPPER * conv_factor){
+			RunStepper(&stepperXins);
+			stepperAux_y = *systicks;
+		}
+	}
+}
+
+/**
+ * @brief Calculate distance to move in x and y directions, in mm,
+ * from the input of the joysticks.
+ */
 void calcStepperIns(void){
-	moveInstruction nextIns;
+	// Blink yellow LED
+	// Unsuspend corresponding task
 
-	// Calculate the next instruction
+	// Read ADC and clear flag --> CHECK LOGIC
+	if(*systicks - ADCaux >= TIME_TO_READ_ADC_MS){
+		ADCaux = *systicks;
 
-	// Writes to instruction queue
-	xQueueSend(stepperInsQueue, (void *) &nextInst, 0);
+		while(!(ADC0->SC1[0] & 0x80)) {   // Wait for end of conversion flag
+			if(*systicks - ADCaux >= ADC_TIMEOUT_MS * conv_factor){
+				break;
+			}
+		}
+		// Assign ADC result
+		ADCres1 = (ADC0->R[0] >> 4) - 10;
+		ADCaux = *systicks;
+
+		// Start ADC conversion in channel 4
+		ADC0->SC1[0] = 0x04;
+
+		while(!(ADC0->SC1[0] & 0x80)) {   // Wait for end of conversion flag
+			if(*systicks - ADCaux >= ADC_TIMEOUT_MS * conv_factor){
+				break;
+			}
+		}
+		// Store result
+		ADCres2 = (ADC0->R[0] >> 4) - 10;
+		ADCaux = *systicks;
+		// Start ADC conversion in channel 0
+		ADC0->SC1[0] = 0;
+	}
+
+	SetStepperVelocity(&stepperMotors.xStepper, ADCres1);
+	SetStepperVelocity(&stepperMotors.yStepper, ADCres2);
+
+	xQueueSend(stepperXQueue, (void *) &stepperMotors.xStepper, 0);
+	xQueueSend(stepperYQueue, (void *) &stepperMotors.yStepper, 0);
+
+	// Stop yellow LED blink
+	// Suspend corresponding task
 }
 
+/**
+ * @brief Display the contents of uartInBuffer to the LCD.
+ * Acquire uartOutBuffer_mux, send data to LCD,
+ * release the mutex.
+ *
+ */
 void displayResults(void){
+	xSemaphoreTake(uartInBuffer_mux, portMAX_DELAY);
 
+	xSemaphoreGive(uartInBuffer_mux);
 }
 
+/**
+ * @brief
+ */
 void finishRestart(void){
 
 }
 
 /************************************************
+ *                 LED control
+ ***********************************************/
+
+/**
+ * LED color meanings
+ *
+ * - Yellow blinking: receiving joystick input and adding instructions for steppers.
+ * - Blue blinking: displaying results to LCD.
+ * - Green blinking: user selecting mode.
+ * -
+ * - Red constant: Error, terminating and restarting.
+ */
+
+/**
+ * @brief Blink the builtinLED red color one time by toggling its state. Use of mutex included
+ * to avoid color mixing.
+ *
+ * Note that the blink might take longer than expected, as the task might be preempted, causing
+ * the mutex to be held for longer, and the toggle to be done later than expected.
+ */
+void blinkRedLED(void){
+	xSemaphoreTake(builtinLED_mux, 50 / portTICK_PERIOD_MS);
+	RedToggle();
+	vTaskDelay(100 / portTICK_PERIOD_MS);
+	RedToggle();
+	vTaskDelay(100 / portTICK_PERIOD_MS);
+	xSemaphoreGive(builtinLED_mux);
+}
+
+/**
+ * @brief Blink the builtinLED yellow color one time by toggling its state. Use of mutex included
+ * to avoid color mixing.
+ *
+ * Note that the blink might take longer than expected, as the task might be preempted, causing
+ * the mutex to be held for longer, and the toggle to be done later than expected.
+ */
+void blinkYellowLED(void){
+	xSemaphoreTake(builtinLED_mux, 50 / portTICK_PERIOD_MS);
+	YellowToggle();
+	vTaskDelay(100 / portTICK_PERIOD_MS);
+	YellowToggle();
+	vTaskDelay(100 / portTICK_PERIOD_MS);
+	xSemaphoreGive(builtinLED_mux);
+}
+
+/**
+ * @brief Blink the builtinLED blue color one time by toggling its state. Use of mutex included
+ * to avoid color mixing.
+ *
+ * Note that the blink might take longer than expected, as the task might be preempted, causing
+ * the mutex to be held for longer, and the toggle to be done later than expected.
+ */
+void blinkBlueLED(void){
+	xSemaphoreTake(builtinLED_mux, 50 / portTICK_PERIOD_MS);
+	BlueToggle();
+	vTaskDelay(100 / portTICK_PERIOD_MS);
+	BlueToggle();
+	vTaskDelay(100 / portTICK_PERIOD_MS);
+	xSemaphoreGive(builtinLED_mux);
+}
+
+/**
+ * @brief Blink the builtinLED green color one time by toggling its state. Use of mutex included
+ * to avoid color mixing.
+ *
+ * Note that the blink might take longer than expected, as the task might be preempted, causing
+ * the mutex to be held for longer, and the toggle to be done later than expected.
+ */
+void blinkGreenLED(void){
+	xSemaphoreTake(builtinLED_mux, 50 / portTICK_PERIOD_MS);
+	GreenToggle();
+	vTaskDelay(100 / portTICK_PERIOD_MS);
+	GreenToggle();
+	vTaskDelay(100 / portTICK_PERIOD_MS);
+	xSemaphoreGive(builtinLED_mux);
+}
+
+
+/************************************************
  *          Interruptions and handlers
  ***********************************************/
-// Keyboard input interrupt
+// Keypad input interrupt
 
-// Keyboard input interrupt handler -->
+// Keypad input interrupt handler -->
 
 
 // Receive inspection error
@@ -135,26 +340,31 @@ void finishRestart(void){
  *         		      Main
  ***********************************************/
 int main(void) {
-//    /* Init board hardware. */
-//    BOARD_InitBootPins();
-//    BOARD_InitBootClocks();
-//    BOARD_InitBootPeripherals();
-//#ifndef BOARD_INIT_DEBUG_CONSOLE_PERIPHERAL
-//    /* Init FSL debug console. */
-//    BOARD_InitDebugConsole();
-//#endif
+	//////////  Hardware modules init  //////////
+	stepperMotors = InitAll();
+	systicks = GetSysTicks();
+	// configure LED missing
 
     //////////  Configuration of tasks //////////
 
 
     //////////    Mutexes and queues   //////////
-    SemaphoreHandle_t evalResults_mux = SemaphoreCreateMutex();
+    evalResults_mux = SemaphoreCreateMutex();
+    uartOutBuffer_mux = SemaphoreCreateMutex();
+    uartInBuffer_mux = SemaphoreCreateMutex();
+    LED_mux = SemaphoreCreateMutex();
 
-    stepperInsQueue = xQueueCreate(stepInsQueue_maxLen, sizeof(moveInstruction));
+    stepperXQueue = xQueueCreate(stepperQueue_maxLen, sizeof(Stepper));
+    stepperYQueue = xQueueCreate(stepperQueue_maxLen, sizeof(Stepper));
 
 
     //////////      Interruptions      //////////
 
+
+
+    //////////      Start scheduler      //////////
+    vTaskStartScheduler();
+    for( ;; );
 
     return 0;
 }
