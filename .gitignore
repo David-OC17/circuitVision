@@ -1,6 +1,10 @@
 # MCUXpresso project file
 /KL25/.metadata
 /KL25/.mcuxpressoide_packages_support
+/KL25/RTOSinspector/RTOSinspector PE Debug.launch
+/KL25/RTOSinspector/.settings/
+/KL25/RTOSinspector/.cproject
+/KL25/RTOSinspector/.project
 
 # Bin from project
 /bin
