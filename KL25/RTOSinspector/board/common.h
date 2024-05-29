@@ -1,9 +1,16 @@
 #ifndef INSPECTOR_COMMON_H
 #define INSPECTOR_COMMON_H
 
-#include "../../CMSIS/MKL25Z4.h"
+#include "MKL25Z4.h"
 #include <stdint.h>
-#include "../include/stepper.h"
+
+#include "LCD_8BIT.h"
+#include "RGB.h"
+#include "clocks.h"
+#include "common.h"
+#include "i2cdisplay.h"
+#include "keypad.h"
+#include "stepper.h"
 
 #define TIME_TO_RUN_STEPPER 0
 #define TIME_TO_PRINT_MS 500
@@ -27,25 +34,19 @@
 #define Z_MOTOR_DIR_PIN 4
 #define Z_MOTOR_ENABLE_PIN 4
 
-typedef struct {
-  Stepper xStepper;
-  Stepper yStepper;
-  Stepper zStepper;
-} Steppers;
-
 /************************************************
  *               Config functions
  ***********************************************/
-static Steppers InitAll(void);
+Steppers InitAll(void);
 
-static void ADC_Config(void);
-static void UART_Config(void);
-static void I2C_Config(void);
-static void Steppers_Config(void);
-static void Keypad_Config(void);
-static void LCD8_Config(void);
-static void RGB_Config(void);
-static void ErrorHandler(void);
+void ADC_Config(void);
+void UART_Config(void);
+void I2C_Config(void);
+Steppers Steppers_Config(void);
+void Keypad_Config(void);
+
+void RGB_Config(void);
+void ErrorHandler(void);
 
 /************************************************
  *                Delay functions

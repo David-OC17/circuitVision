@@ -1,4 +1,4 @@
-#include "../include/keypad.h"
+#include "keypad.h"
 
 char keypad_getkey(void) {
   int row, col;

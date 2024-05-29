@@ -1,6 +1,9 @@
 #ifndef LCD8_H
 #define LCD8_H
 
+#include "MKL25Z4.h"
+#include <stdint.h>
+
 /************************************************
  *                   Macros
  ***********************************************/
@@ -58,6 +61,12 @@ extern GPIO_Type *d0_gpio, *d1_gpio, *d2_gpio, *d3_gpio, *d4_gpio, *d5_gpio,
 
 // GPIOs for additional pins
 extern GPIO_Type *enable_gpio, *rw_gpio, *rs_gpio;
+
+/************************************************
+ *                Config function
+ ***********************************************/
+
+void LCD8_Config(void);
 
 /************************************************
  *                  Functions

@@ -1,4 +1,4 @@
-#include "../include/clocks.h"
+#include "clocks.h"
 
 // Variables
 static uint8_t freq_index;
@@ -91,34 +91,36 @@ void SetDelayTicks(uint32_t delay_ticks){
 	time_delay = delay_ticks;
 }
 
-///// DELAY FUNCTIONS /////
-void delayMs(uint32_t delay){
-	// Manage different conversions according to time unit
-	if(freq_index == CLK_MILLIS)
-		time_delay = delay;
-	else if (freq_index == CLK_HUNDRED_MICROS)
-		time_delay = delay * 10;
-	else if (freq_index == CLK_TENS_MICROS)
-		time_delay = delay * 100;
-	else
-		time_delay = delay << 10;   // Multiplication cannot catch up at high speeds
+/************************************************
+ *                Delay functions
+ ***********************************************/
 
-	// Do nothing until time_delay goes back to 0
-	while(time_delay != 0){
-	}
+void delayMs(uint32_t delay) {
+  // Manage different conversions according to time unit
+  if (freq == CLK_MILLIS)
+    time_delay = delay;
+  else if (freq == CLK_HUNDRED_MICROS)
+    time_delay = delay * 10;
+  else if (freq == CLK_TENS_MICROS)
+    time_delay = delay * 100;
+  else
+    time_delay = delay << 10; // Multiplication cannot catch up at high speeds
+
+  // Do nothing until time_delay goes back to 0
+  while (time_delay != 0) {
+  }
 }
 
-void delayUs(uint32_t delay){
-	if (freq_index == CLK_MILLIS)
-		time_delay = delay >> 10;
-	else if(freq_index == CLK_HUNDRED_MICROS)
-		time_delay = delay / 100;
-	else if(freq_index == CLK_TENS_MICROS)
-		time_delay = delay / 10;
-	else
-		time_delay = delay;
+void delayUs(uint32_t delay) {
+  if (freq == CLK_HUNDRED_MICROS)
+    time_delay = delay / 100;
+  else if (freq == CLK_TENS_MICROS)
+    time_delay = delay / 10;
+  else
+    time_delay = delay;
 
-	// Do nothing until time_delay goes back to 0
-	while(time_delay != 0){
-	}
+  // Do nothing until time_delay goes back to 0
+  while (time_delay != 0) {
+  }
 }
+

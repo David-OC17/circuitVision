@@ -1,6 +1,7 @@
 #ifndef I2CDisplay
 #define I2CDisplay
 
+#include "MKL25Z4.h"
 #include <stdint.h>
 
 /************************************************

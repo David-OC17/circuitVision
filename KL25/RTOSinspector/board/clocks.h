@@ -1,11 +1,8 @@
 #ifndef CLOCKS_H
 #define CLOCKS_H
 
-/////////// Includes ///////////
 #include "MKL25Z4.h"
 #include <stdint.h>
-
-//////////// MACROS ////////////
 
 // Conversions
 #define MILLIS2HUNDRED_MICROS  10
@@ -22,7 +19,9 @@ enum TIME_UNIT{
 	CLK_MICROS          = 3
 };
 
-/////////// Functions //////////
+/************************************************
+ *                General functions
+ ***********************************************/
 void MCG_Config(void);
 void ClkInit(uint8_t);
 void ClkInitIt(uint8_t);
@@ -34,7 +33,9 @@ uint64_t* GetSysTicks(void);
 void SetDelayTicks(uint32_t);
 void SetConvFactor(uint8_t);
 
-// Delay Functions
+/************************************************
+ *                Delay functions
+ ***********************************************/
 void delayMs(uint32_t);
 void delayUs(uint32_t);
 

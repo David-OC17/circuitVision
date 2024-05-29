@@ -1,6 +1,9 @@
 #ifndef KEYPAD_H
 #define KEYPAD_H
 
+#include "MKL25Z4.h"
+#include <stdint.h>
+
 /**
  * @brief Query the keypad to sense which key is getting pressed by the user.
  *

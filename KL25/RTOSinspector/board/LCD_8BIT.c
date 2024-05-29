@@ -1,4 +1,4 @@
-#include "../include/LCD_8BIT.h"
+#include "LCD_8BIT.h"
 
 // Static functions
 static GPIO_Type *IdentifyGPIO(PORT_Type *);
@@ -40,6 +40,46 @@ LCD8_Struct LCD8_defaultConfig = {
     .rs_pin = 2,
     .rw_pin = 4};
 
+/************************************************
+ *                Config function
+ ***********************************************/
+
+void LCD8_Config(void) {
+  // Configure GPIOs
+  ConfigureGPIO(LCD8_defaultConfig.enable_port, LCD8_defaultConfig.enable_pin);
+  ConfigureGPIO(LCD8_defaultConfig.rs_port, LCD8_defaultConfig.rs_pin);
+  ConfigureGPIO(LCD8_defaultConfig.rw_port, LCD8_defaultConfig.rw_pin);
+  // Data pins
+  ConfigureGPIO(LCD8_defaultConfig.d0_port, LCD8_defaultConfig.d0_pin);
+  ConfigureGPIO(LCD8_defaultConfig.d1_port, LCD8_defaultConfig.d1_pin);
+  ConfigureGPIO(LCD8_defaultConfig.d2_port, LCD8_defaultConfig.d2_pin);
+  ConfigureGPIO(LCD8_defaultConfig.d3_port, LCD8_defaultConfig.d3_pin);
+  ConfigureGPIO(LCD8_defaultConfig.d4_port, LCD8_defaultConfig.d4_pin);
+  ConfigureGPIO(LCD8_defaultConfig.d5_port, LCD8_defaultConfig.d5_pin);
+  ConfigureGPIO(LCD8_defaultConfig.d6_port, LCD8_defaultConfig.d6_pin);
+  ConfigureGPIO(LCD8_defaultConfig.d7_port, LCD8_defaultConfig.d7_pin);
+  // Get the GPIOS with the port
+  SetGPIOs();
+
+  delayMs(20);
+  LCD8_CommandNoWait(0x30);
+  delayMs(5);
+  LCD8_CommandNoWait(0x30);
+  delayMs(1);
+  LCD8_CommandNoWait(0x30);
+  /* set 8-bit data, 2-line, 5x7 font */
+  LCD8_Command(0x38);
+  /* move cursor right */
+  LCD8_Command(0x06);
+  /* clear screen, move cursor to home */
+  LCD8_Command(0x01);
+  /* turn on display, cursor blinking */
+  LCD8_Command(0x0F);
+}
+
+/************************************************
+ *                Other functions
+ ***********************************************/
 void LCD8_Command(unsigned char command) {
   LCD8_Ready();
   rs_gpio->PCOR |= RS;

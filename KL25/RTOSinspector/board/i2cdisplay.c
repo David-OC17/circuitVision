@@ -1,4 +1,4 @@
-#include "../include/i2cdisplay.h"
+#include "i2cdisplay.h"
 
 /************************************************
  *                 Variables 

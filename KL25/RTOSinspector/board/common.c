@@ -1,4 +1,4 @@
-#include "../include/common.h"
+#include "common.h"
 
 /************************************************
  *               Config functions
@@ -62,6 +62,8 @@ void I2C_Config(void) {
 }
 
 Steppers Steppers_Config(void) {
+  Steppers tempSteppers;
+
   // Configure motor X pins
   uint32_t stp_pin = X_MOTOR_STP_PIN;
   PORT_Type *stp_port = PORTC;
@@ -70,7 +72,7 @@ Steppers Steppers_Config(void) {
   uint32_t enable_pin = X_MOTOR_ENABLE_PIN;
   PORT_Type *enable_port = PORTC;
 
-  stpX = CreateStepper(stp_pin, stp_port, dir_pin, dir_port, enable_pin,
+  tempSteppers.xStepper = CreateStepper(stp_pin, stp_port, dir_pin, dir_port, enable_pin,
                        enable_port);
 
   // Configure motor Y pins
@@ -81,7 +83,7 @@ Steppers Steppers_Config(void) {
   enable_pin = Y_MOTOR_ENABLE_PIN;
   enable_port = PORTC;
 
-  stpY = CreateStepper(stp_pin, stp_port, dir_pin, dir_port, enable_pin,
+  tempSteppers.yStepper = CreateStepper(stp_pin, stp_port, dir_pin, dir_port, enable_pin,
                        enable_port);
 
   // Configure motor Z pins
@@ -92,16 +94,14 @@ Steppers Steppers_Config(void) {
   enable_pin = Z_MOTOR_ENABLE_PIN;
   enable_port = PORTA;
 
-  stpZ = CreateStepper(stp_pin, stp_port, dir_pin, dir_port, enable_pin,
+  tempSteppers.zStepper = CreateStepper(stp_pin, stp_port, dir_pin, dir_port, enable_pin,
                        enable_port);
 
-  StepperInit(&stpX);
-  StepperInit(&stpY);
-  StepperInit(&stpZ);
+  StepperInit(&tempSteppers.xStepper);
+  StepperInit(&tempSteppers.yStepper);
+  StepperInit(&tempSteppers.zStepper);
 
-  Steppers stepperMotors = {stpX, stpY, stpZ}; 
-
-  return stepperMotors;
+  return tempSteppers;
 }
 
 void Keypad_Config(void) {
@@ -115,39 +115,6 @@ void Keypad_Config(void) {
   PORTC->PCR[6] = 0x103; /* PTD6, GPIO, enable pullup*/
   PORTC->PCR[7] = 0x103; /* PTD7, GPIO, enable pullup*/
   PTC->PDDR = 0x0F;      /* make PTD7-0 as input pins */
-}
-
-void LCD8_Config(void) {
-  // Configure GPIOs
-  ConfigureGPIO(LCD8_defaultConfig.enable_port, LCD8_defaultConfig.enable_pin);
-  ConfigureGPIO(LCD8_defaultConfig.rs_port, LCD8_defaultConfig.rs_pin);
-  ConfigureGPIO(LCD8_defaultConfig.rw_port, LCD8_defaultConfig.rw_pin);
-  // Data pins
-  ConfigureGPIO(LCD8_defaultConfig.d0_port, LCD8_defaultConfig.d0_pin);
-  ConfigureGPIO(LCD8_defaultConfig.d1_port, LCD8_defaultConfig.d1_pin);
-  ConfigureGPIO(LCD8_defaultConfig.d2_port, LCD8_defaultConfig.d2_pin);
-  ConfigureGPIO(LCD8_defaultConfig.d3_port, LCD8_defaultConfig.d3_pin);
-  ConfigureGPIO(LCD8_defaultConfig.d4_port, LCD8_defaultConfig.d4_pin);
-  ConfigureGPIO(LCD8_defaultConfig.d5_port, LCD8_defaultConfig.d5_pin);
-  ConfigureGPIO(LCD8_defaultConfig.d6_port, LCD8_defaultConfig.d6_pin);
-  ConfigureGPIO(LCD8_defaultConfig.d7_port, LCD8_defaultConfig.d7_pin);
-  // Get the GPIOS with the port
-  SetGPIOs();
-
-  delayMs(20);
-  LCD8_CommandNoWait(0x30);
-  delayMs(5);
-  LCD8_CommandNoWait(0x30);
-  delayMs(1);
-  LCD8_CommandNoWait(0x30);
-  /* set 8-bit data, 2-line, 5x7 font */
-  LCD8_Command(0x38);
-  /* move cursor right */
-  LCD8_Command(0x06);
-  /* clear screen, move cursor to home */
-  LCD8_Command(0x01);
-  /* turn on display, cursor blinking */
-  LCD8_Command(0x0F);
 }
 
 void RGB_Config(void) {
@@ -174,35 +141,3 @@ void ErrorHandler(void) {
   } // Infinite loop
 }
 
-/************************************************
- *                Delay functions
- ***********************************************/
-
-void delayMs(uint32_t delay) {
-  // Manage different conversions according to time unit
-  if (freq == CLK_MILLIS)
-    time_delay = delay;
-  else if (freq == CLK_HUNDRED_MICROS)
-    time_delay = delay * 10;
-  else if (freq == CLK_TENS_MICROS)
-    time_delay = delay * 100;
-  else
-    time_delay = delay << 10; // Multiplication cannot catch up at high speeds
-
-  // Do nothing until time_delay goes back to 0
-  while (time_delay != 0) {
-  }
-}
-
-void delayUs(uint32_t delay) {
-  if (freq == CLK_HUNDRED_MICROS)
-    time_delay = delay / 100;
-  else if (freq == CLK_TENS_MICROS)
-    time_delay = delay / 10;
-  else
-    time_delay = delay;
-
-  // Do nothing until time_delay goes back to 0
-  while (time_delay != 0) {
-  }
-}

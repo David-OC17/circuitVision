@@ -1,4 +1,4 @@
-#include "../include/RGB.h"
+#include "RGB.h"
 
 // Turn on LED
 void LED_On(GPIO_Type *port, uint32_t pin) { port->PDOR &= ~pin; }
