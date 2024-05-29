@@ -69,8 +69,8 @@ Steppers Steppers_Config(void) {
   uint32_t enable_pin = X_MOTOR_ENABLE_PIN;
   PORT_Type *enable_port = PORTC;
 
-  tempSteppers.xStepper = CreateStepper(stp_pin, stp_port, dir_pin, dir_port, enable_pin,
-                       enable_port);
+  tempSteppers.xStepper = CreateStepper(stp_pin, stp_port, dir_pin, dir_port,
+                                        enable_pin, enable_port);
 
   // Configure motor Y pins
   stp_pin = Y_MOTOR_STP_PIN;
@@ -80,19 +80,19 @@ Steppers Steppers_Config(void) {
   enable_pin = Y_MOTOR_ENABLE_PIN;
   enable_port = PORTC;
 
-  tempSteppers.yStepper = CreateStepper(stp_pin, stp_port, dir_pin, dir_port, enable_pin,
-                       enable_port);
+  tempSteppers.yStepper = CreateStepper(stp_pin, stp_port, dir_pin, dir_port,
+                                        enable_pin, enable_port);
 
   // Configure motor Z pins
-  stp_pin = Z_MOTOR_STP_PIN ;
+  stp_pin = Z_MOTOR_STP_PIN;
   stp_port = PORTA;
   dir_pin = Z_MOTOR_DIR_PIN;
   dir_port = PORTD;
   enable_pin = Z_MOTOR_ENABLE_PIN;
   enable_port = PORTA;
 
-  tempSteppers.zStepper = CreateStepper(stp_pin, stp_port, dir_pin, dir_port, enable_pin,
-                       enable_port);
+  tempSteppers.zStepper = CreateStepper(stp_pin, stp_port, dir_pin, dir_port,
+                                        enable_pin, enable_port);
 
   StepperInit(&tempSteppers.xStepper);
   StepperInit(&tempSteppers.yStepper);
@@ -137,4 +137,3 @@ void ErrorHandler(void) {
   while (1) {
   } // Infinite loop
 }
-

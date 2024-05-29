@@ -7,7 +7,7 @@ char keypad_getkey(void) {
   /* check to see any key pressed */
   PTC->PDDR |= 0x0F; /* enable all rows */
   PTC->PCOR = 0x0F;
-  delayUs(2);             /* wait for signal return */
+  vTaskDelay(2 / portTICK_PERIOD_MS);
   col = PTC->PDIR & 0xF0; /* read all columns */
   PTC->PDDR = 0;          /* disable all rows */
   if (col == 0xF0)
@@ -18,7 +18,7 @@ char keypad_getkey(void) {
     PTC->PDDR = 0;                /* disable all rows */
     PTC->PDDR |= row_select[row]; /* enable one row */
     PTC->PCOR = row_select[row];  /* drive active row low*/
-    delayUs(2);                   /* wait for signal to settle */
+    vTaskDelay(2 / portTICK_PERIOD_MS);
     col = PTC->PDIR & 0xF0;       /* read all columns */
     if (col != 0xF0)
       break;
