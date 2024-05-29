@@ -1,0 +1,16 @@
+../board/i2cdisplay.c:18:13:LCD_DefaultInit	16	static
+../board/i2cdisplay.c:25:13:LCD_Init	16	static
+../board/i2cdisplay.c:83:13:Write4Bits	16	static
+../board/i2cdisplay.c:89:13:PulseEnable	16	static
+../board/i2cdisplay.c:99:13:Command	16	static
+../board/i2cdisplay.c:103:13:Send	32	static
+../board/i2cdisplay.c:114:13:Clear	8	static
+../board/i2cdisplay.c:121:13:Home	8	static
+../board/i2cdisplay.c:127:13:SetCursor	40	static
+../board/i2cdisplay.c:140:13:Display	8	static
+../board/i2cdisplay.c:147:13:NoDisplay	8	static
+../board/i2cdisplay.c:154:13:Cursor	8	static
+../board/i2cdisplay.c:161:13:NoCursor	8	static
+../board/i2cdisplay.c:168:13:Blink	8	static
+../board/i2cdisplay.c:175:13:NoBlink	8	static
+../board/i2cdisplay.c:183:13:I2C_WriteByte	24	static

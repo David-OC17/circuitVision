@@ -1,0 +1,13 @@
+../utilities/fsl_shell.c:111:6:SHELL_Init	24	static
+../utilities/fsl_shell.c:130:9:SHELL_Main	32	static
+../utilities/fsl_shell.c:316:16:HelpCommand	40	static
+../utilities/fsl_shell.c:327:16:ExitCommand	24	static
+../utilities/fsl_shell.c:335:13:ProcessCommand	296	static
+../utilities/fsl_shell.c:424:13:GetHistoryCommand	24	static
+../utilities/fsl_shell.c:455:13:AutoComplete	48	static
+../utilities/fsl_shell.c:513:14:StrCopy	32	static
+../utilities/fsl_shell.c:526:16:StrLen	24	static
+../utilities/fsl_shell.c:538:16:StrCompare	24	static
+../utilities/fsl_shell.c:550:16:ParseLine	40	static
+../utilities/fsl_shell.c:605:9:SHELL_RegisterCommand	24	static
+../utilities/fsl_shell.c:621:16:GetChar	32	static

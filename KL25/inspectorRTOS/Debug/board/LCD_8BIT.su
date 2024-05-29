@@ -1,0 +1,14 @@
+../board/LCD_8BIT.c:47:6:LCD8_Config	8	static
+../board/LCD_8BIT.c:83:6:LCD8_Command	16	static
+../board/LCD_8BIT.c:93:6:LCD8_CommandNoWait	16	static
+../board/LCD_8BIT.c:102:6:LCD8_Data	16	static
+../board/LCD_8BIT.c:112:6:LCD8_Ready	16	static
+../board/LCD_8BIT.c:132:6:LCD8_Clear	8	static
+../board/LCD_8BIT.c:135:6:LCD8_NoBlink	8	static
+../board/LCD_8BIT.c:138:6:LCD8_Blink	8	static
+../board/LCD_8BIT.c:140:6:LCD8_Write	16	static
+../board/LCD_8BIT.c:157:13:SetGPIOs	8	static
+../board/LCD_8BIT.c:173:13:ConfigureGPIO	16	static
+../board/LCD_8BIT.c:190:13:ConfigurePort	16	static
+../board/LCD_8BIT.c:204:19:IdentifyGPIO	16	static
+../board/LCD_8BIT.c:218:17:ToBinaryGPIO	16	static

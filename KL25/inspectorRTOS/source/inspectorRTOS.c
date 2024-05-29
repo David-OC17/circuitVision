@@ -12,6 +12,7 @@
 #include "queue.h"
 #include "semphr.h"
 #include "task.h"
+#include "list.h"
 #include <stdio.h>
 
 /************************************************

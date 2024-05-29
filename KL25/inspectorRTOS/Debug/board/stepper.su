@@ -1,0 +1,15 @@
+../board/stepper.c:6:9:CreateStepper	64	static
+../board/stepper.c:19:6:SetStepperSettings	32	static
+../board/stepper.c:26:6:SetStepperDirection	24	static
+../board/stepper.c:35:6:SetStepperDelay	16	static
+../board/stepper.c:39:6:StepperInit	16	static
+../board/stepper.c:51:6:RunStepper	24	static
+../board/stepper.c:68:6:SetStepperVelocity	24	static
+../board/stepper.c:87:6:MoveMillimeters	32	static
+../board/stepper.c:99:6:StepperOff	24	static
+../board/stepper.c:104:6:SetPinHigh	16	static
+../board/stepper.c:108:6:SetPinLow	16	static
+../board/stepper.c:112:19:IdentifyGPIO	16	static
+../board/stepper.c:126:6:GPIO_Configure	16	static
+../board/stepper.c:143:6:PortConfigure	16	static
+../board/stepper.c:157:17:ToBinaryGPIO	16	static
