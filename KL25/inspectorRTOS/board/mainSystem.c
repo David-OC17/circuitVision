@@ -24,7 +24,7 @@ SemaphoreHandle_t builtinLED_mux;
 //////////   Steppers    /////////
 Steppers stepperMotors;
 
-const int stepperQueue_maxLen = 6;
+const int stepperQueue_maxLen = 10;
 QueueHandle_t stepperXQueue;
 QueueHandle_t stepperYQueue;
 
@@ -56,10 +56,11 @@ char LCDBuffer[50];
 // Values for stepper motor ranges
 const uint16_t stpMovePos = 3500;
 const uint16_t stpMoveNeg = 500;
-//const uint16_t stpMoveNone = 2048;
+const uint16_t stpMoveNone = 2048;
 
-const int timeTraverseRow = 0; // CHANGE
+const int timeTraverseRow = 1000; // CHANGE
 const int timeWaitAtWaypoint = 3000; // ms
+const int timeWaitMotorIns = 1000;
 
 uint32_t ulErrorNotificationVal;
 
@@ -89,20 +90,20 @@ TaskHandle_t blinkBlueLED_handle = NULL;
 TaskHandle_t blinkGreenLED_handle = NULL;
 
 //////////   Stack size (in words)    /////////
-const int blinkLEDtask_stackDepth = 128;
-const int displayResults_stackDepth = 128;
-const int simpleTasks_stackDepth = 128;
-const int complexTasks_stackDepth = 1024;
+const uint16_t blinkLEDtask_stackDepth = 16;
+const uint16_t displayResults_stackDepth = 16;
+const uint16_t simpleTasks_stackDepth = 16;
+const uint16_t complexTasks_stackDepth = 32;
 
 //////////   Priority (1 to 5)   /////////
-const int errorTaskStop_priority = 5;
-const int userSelectMode_priority = 4;
-const int UARTsend_priority = 3;
-const int LCDprint_priority = 3;
-const int moveStepperMotor_priority = 4;
-const int calcStepperIns_priority = 4;
-const int displayResults_priority = 2;
-const int blinkLED_priority = 1;
+const uint32_t errorTaskStop_priority = 5;
+const uint32_t userSelectMode_priority = 4;
+const uint32_t UARTsend_priority = 3;
+const uint32_t LCDprint_priority = 3;
+const uint32_t moveStepperMotor_priority = 4;
+const uint32_t calcStepperIns_priority = 4;
+const uint32_t displayResults_priority = 2;
+const uint32_t blinkLED_priority = 1;
 
 
 void userSelectMode(void *pvParameters) {
@@ -163,10 +164,10 @@ void UARTsend(void *pvParameters) {
 
 void moveXStepperMotor(void *pvParameters) {
   for (;;) {
-    uint16_t ADCval = 0;
+    uint16_t ADCval = stpMoveNone;
 
     // Send available instruction to motors
-    if (xQueueReceive(stepperXQueue, &ADCval, 0)) {
+    if (xQueueReceive(stepperXQueue, &ADCval, timeWaitMotorIns) == pdTRUE) {
       if (ADCval > 3070)
         SetStepperDirection(&stepperMotors.xStepper, CLOCKWISE);
       else if (ADCval < 1023)
@@ -180,17 +181,17 @@ void moveXStepperMotor(void *pvParameters) {
         }
         stepperAux_x = xTaskGetTickCount();
       }
-      vTaskDelay(pdMS_TO_TICKS(timeWaitAtWaypoint)); // Delay 3 seconds to wait to take image
+      vTaskDelay(timeWaitAtWaypoint); // Delay 3 seconds to wait to take image
     }
   }
 }
 
 void moveYStepperMotor(void *pvParameters) {
   for (;;) {
-    uint16_t ADCval = 0;
+    uint16_t ADCval = stpMoveNone;
 
     // Send available instruction to motors
-    if (xQueueReceive(stepperYQueue, &ADCval, 0)) {
+    if (xQueueReceive(stepperYQueue, &ADCval, timeWaitMotorIns) == pdTRUE) {
       if (ADCval > 3070)
         SetStepperDirection(&stepperMotors.yStepper, CLOCKWISE);
       else if (ADCval < 1023)
@@ -204,7 +205,7 @@ void moveYStepperMotor(void *pvParameters) {
         }
         stepperAux_y = xTaskGetTickCount();
       }
-      vTaskDelay(pdMS_TO_TICKS(timeWaitAtWaypoint)); // Delay 3 seconds to wait to take image
+      vTaskDelay(timeWaitAtWaypoint); // Delay 3 seconds to wait to take image
     }
   }
 }
@@ -275,7 +276,7 @@ void errorTaskStop(void *pvParameters){
 	}
 }
 
-void LCDprinter(void *pvParameters){
+void LCDprint(void *pvParameters){
 	char compLCDBuffer[50];
 	strcpy(compLCDBuffer, LCDBuffer);
 
@@ -299,9 +300,9 @@ void LCDprinter(void *pvParameters){
 
 void loadRowIns(void *pvParameters){
 	for(;;){
-		xQueueSend(stepperXQueue, (void *)&stpMovePos, 0);
-		xQueueSend(stepperXQueue, (void *)&stpMovePos, 0);
-		xQueueSend(stepperXQueue, (void *)&stpMovePos, 0);
+		if(xQueueSend(stepperXQueue, &stpMovePos, portMAX_DELAY) == pdTRUE);
+		if(xQueueSend(stepperXQueue, &stpMovePos, portMAX_DELAY) == pdTRUE);
+		if(xQueueSend(stepperXQueue, &stpMovePos, portMAX_DELAY) == pdTRUE);
 
 		vTaskDelay(timeTraverseRow);
 
@@ -311,25 +312,25 @@ void loadRowIns(void *pvParameters){
 
 void loadAllIns(void *pvParameters) {
 	for(;;){
-	xQueueSend(stepperXQueue, (void *)&stpMovePos, 0);
-	xQueueSend(stepperXQueue, (void *)&stpMovePos, 0);
-	xQueueSend(stepperXQueue, (void *)&stpMovePos, 0);
+	if(xQueueSend(stepperXQueue, &stpMovePos, portMAX_DELAY) == pdTRUE);
+	if(xQueueSend(stepperXQueue, &stpMovePos, portMAX_DELAY) == pdTRUE);
+	if(xQueueSend(stepperXQueue, &stpMovePos, portMAX_DELAY) == pdTRUE);
 
 	vTaskDelay(timeTraverseRow);
 
-	xQueueSend(stepperYQueue, (void *)&stpMovePos, 0);
+	if(xQueueSend(stepperYQueue, &stpMovePos, 0) == pdTRUE);
 
-	xQueueSend(stepperYQueue, (void *)&stpMoveNeg, 0);
-	xQueueSend(stepperYQueue, (void *)&stpMoveNeg, 0);
-	xQueueSend(stepperYQueue, (void *)&stpMoveNeg, 0);
+	if(xQueueSend(stepperXQueue, &stpMovePos, portMAX_DELAY) == pdTRUE);
+	if(xQueueSend(stepperXQueue, &stpMovePos, portMAX_DELAY) == pdTRUE);
+	if(xQueueSend(stepperXQueue, &stpMovePos, portMAX_DELAY) == pdTRUE);
 
 	vTaskDelay(timeTraverseRow);
 
-	xQueueSend(stepperYQueue, (void *)&stpMovePos, 0);
+	if(xQueueSend(stepperYQueue, &stpMovePos, 0) == pdTRUE);
 
-	xQueueSend(stepperYQueue, (void *)&stpMoveNeg, 0);
-	xQueueSend(stepperYQueue, (void *)&stpMoveNeg, 0);
-	xQueueSend(stepperYQueue, (void *)&stpMoveNeg, 0);
+	if(xQueueSend(stepperXQueue, &stpMovePos, portMAX_DELAY) == pdTRUE);
+	if(xQueueSend(stepperXQueue, &stpMovePos, portMAX_DELAY) == pdTRUE);
+	if(xQueueSend(stepperXQueue, &stpMovePos, portMAX_DELAY) == pdTRUE);
 
 	vTaskSuspend(NULL);
 	}
@@ -354,39 +355,51 @@ void displayResults(void *pvParameters) {
  ***********************************************/
 
 void blinkRedLED(void *pvParameters) {
-  xSemaphoreTake(builtinLED_mux, 50 / portTICK_PERIOD_MS);
-  RedToggle();
-  vTaskDelay(100 / portTICK_PERIOD_MS);
-  RedToggle();
-  vTaskDelay(100 / portTICK_PERIOD_MS);
-  xSemaphoreGive(builtinLED_mux);
+	for(;;) {
+	        if (xSemaphoreTake(builtinLED_mux, pdMS_TO_TICKS(1000)) == pdTRUE) {
+	            RedOn();
+	            vTaskDelay(pdMS_TO_TICKS(1000));
+	            RedOff();
+	            xSemaphoreGive(builtinLED_mux);
+	        }
+	        vTaskDelay(pdMS_TO_TICKS(1000));
+	    }
 }
 
 void blinkYellowLED(void *pvParameters) {
-  xSemaphoreTake(builtinLED_mux, 50 / portTICK_PERIOD_MS);
-  YellowToggle();
-  vTaskDelay(100 / portTICK_PERIOD_MS);
-  YellowToggle();
-  vTaskDelay(100 / portTICK_PERIOD_MS);
-  xSemaphoreGive(builtinLED_mux);
+	for(;;) {
+	        if (xSemaphoreTake(builtinLED_mux, pdMS_TO_TICKS(1000)) == pdTRUE) {
+	            YellowOn();
+	            vTaskDelay(pdMS_TO_TICKS(1000));
+	            YellowOff();
+	            xSemaphoreGive(builtinLED_mux);
+	        }
+	        vTaskDelay(pdMS_TO_TICKS(1000));
+	    }
 }
 
 void blinkBlueLED(void *pvParameters) {
-  xSemaphoreTake(builtinLED_mux, 50 / portTICK_PERIOD_MS);
-  BlueToggle();
-  vTaskDelay(100 / portTICK_PERIOD_MS);
-  BlueToggle();
-  vTaskDelay(100 / portTICK_PERIOD_MS);
-  xSemaphoreGive(builtinLED_mux);
+for(;;) {
+		if (xSemaphoreTake(builtinLED_mux, pdMS_TO_TICKS(1000)) == pdTRUE) {
+			BlueOn();
+			vTaskDelay(pdMS_TO_TICKS(1000));
+			BlueOff();
+			xSemaphoreGive(builtinLED_mux);
+		}
+		vTaskDelay(pdMS_TO_TICKS(1000));
+	}
 }
 
 void blinkGreenLED(void *pvParameters) {
-  xSemaphoreTake(builtinLED_mux, 50 / portTICK_PERIOD_MS);
-  GreenToggle();
-  vTaskDelay(100 / portTICK_PERIOD_MS);
-  GreenToggle();
-  vTaskDelay(100 / portTICK_PERIOD_MS);
-  xSemaphoreGive(builtinLED_mux);
+for(;;) {
+		if (xSemaphoreTake(builtinLED_mux, pdMS_TO_TICKS(1000)) == pdTRUE) {
+			GreenOn();
+			vTaskDelay(pdMS_TO_TICKS(1000));
+			BlueOff();
+			xSemaphoreGive(builtinLED_mux);
+		}
+		vTaskDelay(pdMS_TO_TICKS(1000));
+	}
 }
 
 /************************************************

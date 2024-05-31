@@ -1,8 +1,9 @@
-../board/common.c:7:10:InitAll	16	static
-../board/common.c:18:6:ADC_Config	8	static
-../board/common.c:31:6:UART_Config	8	static
-../board/common.c:48:6:I2C_Config	8	static
-../board/common.c:61:10:Steppers_Config	192	static
-../board/common.c:104:6:Keypad_Config	8	static
-../board/common.c:117:6:RGB_Config	8	static
-../board/common.c:134:6:ErrorHandler	8	static
+../board/common.c:11:10:InitAll	16	static
+../board/common.c:22:6:ADC_Config	8	static
+../board/common.c:35:6:UART_Config	8	static
+../board/common.c:55:6:I2C_Config	8	static
+../board/common.c:68:10:Steppers_Config	192	static
+../board/common.c:111:6:Keypad_Config	8	static
+../board/common.c:124:6:RGB_Config	8	static
+../board/common.c:141:6:ErrorHandler	8	static
+../board/common.c:148:6:sendUART	32	static

@@ -1,10 +1,16 @@
 # MCUXpresso project file
+
+/KL25/inspectorRTOS/Debug
+/KL25/AzureRTOS_TAD_logs
+/KL25/FreeRTOS_TAD_logs
+/KL25/ZephyrRTOS_TAD_logs
+/KL25/inspectorRTOS/inspectorRTOS PE Debug.launch
+
 /KL25/.metadata
 /KL25/.mcuxpressoide_packages_support
-/KL25/RTOSinspector/RTOSinspector PE Debug.launch
-/KL25/RTOSinspector/.settings/
-/KL25/RTOSinspector/.cproject
-/KL25/RTOSinspector/.project
+/KL25/inspectorRTOS/.settings
+/KL25/inspectorRTOS/.cproject
+/KL25/inspectorRTOS/.project
 
 # Bin from project
 /bin

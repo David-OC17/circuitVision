@@ -68,10 +68,11 @@ extern char LCDBuffer[50];
 // Values for stepper motor ranges
 extern const uint16_t stpMovePos;
 extern const uint16_t stpMoveNeg;
-// extern const uint16_t stpMoveNone = 2048;
+extern const uint16_t stpMoveNone;
 
 extern const int timeTraverseRow;       // CHANGE
 extern const int timeWaitAtWaypoint; // ms
+extern const int timeWaitMotorIns;
 
 extern uint32_t ulErrorNotificationVal;
 
@@ -114,20 +115,20 @@ extern TaskHandle_t blinkBlueLED_handle;
 extern TaskHandle_t blinkGreenLED_handle;
 
 //////////   Stack size (in words)    /////////
-extern const int blinkLEDtask_stackDepth;
-extern const int displayResults_stackDepth;
-extern const int simpleTasks_stackDepth;
-extern const int complexTasks_stackDepth;
+extern const uint16_t blinkLEDtask_stackDepth;
+extern const uint16_t displayResults_stackDepth;
+extern const uint16_t simpleTasks_stackDepth;
+extern const uint16_t complexTasks_stackDepth;
 
 //////////   Priority (1 to 5)   /////////
-extern const int errorTaskStop_priority;
-extern const int userSelectMode_priority;
-extern const int UARTsend_priority;
-extern const int LCDprint_priority;
-extern const int moveStepperMotor_priority;
-extern const int calcStepperIns_priority;
-extern const int displayResults_priority;
-extern const int blinkLED_priority;
+extern const uint32_t errorTaskStop_priority;
+extern const uint32_t userSelectMode_priority;
+extern const uint32_t UARTsend_priority;
+extern const uint32_t LCDprint_priority;
+extern const uint32_t moveStepperMotor_priority;
+extern const uint32_t calcStepperIns_priority;
+extern const uint32_t displayResults_priority;
+extern const uint32_t blinkLED_priority;
 
 /**
  * @brief Display menu message to LCD, wait for input,
@@ -174,7 +175,7 @@ void errorTaskStop(void *pvParameters);
  * @brief Check LCD buffer and print contents to LCD.
  * Only display new and clear if there have been changes.
  */
-void LCDprinter(void *pvParameters);
+void LCDprint(void *pvParameters);
 
 /**
  * @brief

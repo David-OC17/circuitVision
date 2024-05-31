@@ -1,5 +1,9 @@
 #include "common.h"
 
+char uart_tx[50];
+const TickType_t UART_timeout_ticks = 500;
+TickType_t UARTtick_aux;
+
 /************************************************
  *               Config functions
  ***********************************************/
@@ -29,20 +33,23 @@ void ADC_Config(void) {
 }
 
 void UART_Config(void) {
-  // Clocks
-  SIM->SOPT2 |= (1 << 26); // Specify clock  --> Uses the same as clock core (48
-                           // Mhz currently)
-  SIM->SCGC4 |= 0x400;     // Enable clock for UART0
-  // Baud Rate
-  UART0->BDH = 0x01;
-  UART0->BDL = 0x38; // Baud Rate = 9600
-  // Configurations
-  UART0->C1 |= 0x80; // UART RX and TX in different pins (normal operation)
-  UART0->C2 |= 0x08; // Enable UART Transmitter
-  UART0->C4 |= 0x0F; // Enable oversampling to 16
-  // Ports
-  SIM->SCGC5 |= 0x200;    // Enable clock for PORTA
-  PORTA->PCR[2] = 0x0200; // Make PTA2 UART0 Pin
+    // Clocks
+    SIM->SCGC4 |= SIM_SCGC4_UART0_MASK; // Enable clock for UART0
+    SIM->SOPT2 |= SIM_SOPT2_UART0SRC(1); // Specify clock
+
+    // Baud Rate
+	UART0->BDH = 0x00;
+	UART0->BDL = 0x0C;         // Baud Rate = 115200
+
+    // Configurations
+    UART0->C1 = 0x00; // 8-bit data, no parity
+    UART0->C2 |= UART_C2_TE_MASK | UART_C2_RE_MASK; // Enable transmitter and receiver
+    UART0->C4 |= 0x0F;	 // Enable oversampling to 16
+
+    // Ports
+    SIM->SCGC5 |= SIM_SCGC5_PORTA_MASK; // Enable clock for PORTA
+    PORTA->PCR[1] = PORT_PCR_MUX(2); // Set PTA1 to UART0_RX
+    PORTA->PCR[2] = PORT_PCR_MUX(2); // Set PTA2 to UART0_TX
 }
 
 void I2C_Config(void) {
@@ -136,4 +143,19 @@ void ErrorHandler(void) {
   RedOn();   // Turn on red light
   while (1) {
   } // Infinite loop
+}
+
+void sendUART(char uart_tx_send[50]){
+	strcpy(uart_tx, uart_tx_send);
+
+	for(uint8_t i=0; i < strlen(uart_tx); i++){
+		UART0->D = uart_tx[i];
+		while(!(UART0->S1 & 0x40)){  // Wait for the TX buffer to be empty
+			if(xTaskGetTickCount() - UARTtick_aux >= UART_timeout_ticks){
+				break;
+			}
+		}
+		UARTtick_aux = xTaskGetTickCount();
+		memset(&uart_tx[0], 0, sizeof(uart_tx)); // Clear
+	}
 }

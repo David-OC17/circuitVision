@@ -1,9 +1,7 @@
 #include "mainSystem.h"
+#include "pathSteppers_test.c"
 
-/************************************************
- *         		      Main
- ***********************************************/
-int main(void) {
+int main_(void) {
   //////////  Hardware modules init  //////////
   stepperMotors = InitAll();
   // configure LED missing --> configure for external LEDs
@@ -15,7 +13,7 @@ int main(void) {
   xTaskCreate(UARTsend, "UARTsendTask", simpleTasks_stackDepth, NULL,
               UARTsend_priority, &UARTsend_handle);
 
-  xTaskCreate(LCDprint_handle, "LCDprintTask", complexTasks_stackDepth, NULL,
+  xTaskCreate(LCDprint, "LCDprintTask", complexTasks_stackDepth, NULL,
                 LCDprint_priority, &LCDprint_handle);
 
   xTaskCreate(calcStepperIns, "calcStepperInsTask", complexTasks_stackDepth, NULL,
@@ -58,11 +56,11 @@ int main(void) {
 
   xTaskCreate(loadRowIns, "loadRowInsTask", simpleTasks_stackDepth, NULL,
 			   moveStepperMotor_priority, &loadRowIns_handle);
-  vTaskSuspend(returnToOrigin_handle);
+  vTaskSuspend(loadRowIns_handle);
 
   xTaskCreate(loadAllIns, "loadAllInsTask", simpleTasks_stackDepth, NULL,
 			  errorTaskStop_priority, &errorTaskStop_handle);
-  vTaskSuspend(returnToOrigin_handle);
+  vTaskSuspend(loadAllIns_handle);
 
   //////////    Error handling  //////////
   xTaskCreate(errorTaskStop, "errorTaskStopTask", simpleTasks_stackDepth, NULL,
@@ -71,11 +69,11 @@ int main(void) {
 
 
   //////////    Mutexes and queues   //////////
-  vSemaphoreCreateBinary(evalResults_mux);
-  vSemaphoreCreateBinary(uartOutBuffer_mux);
-  vSemaphoreCreateBinary(uartInBuffer_mux);
-  vSemaphoreCreateBinary(uartInBuffer_mux);
-  vSemaphoreCreateBinary(LCDBuffer_mux);
+  builtinLED_mux = xSemaphoreCreateMutex();
+  evalResults_mux = xSemaphoreCreateBinary();
+  uartOutBuffer_mux = xSemaphoreCreateBinary();
+  uartInBuffer_mux = xSemaphoreCreateBinary();
+  LCDBuffer_mux = xSemaphoreCreateBinary();
 
   stepperXQueue = xQueueCreate(stepperQueue_maxLen, sizeof(uint16_t));
   stepperYQueue = xQueueCreate(stepperQueue_maxLen, sizeof(uint16_t));
@@ -87,4 +85,13 @@ int main(void) {
   for (;;);
 
   return 0;
+}
+
+/************************************************
+ *         		      Main
+ ***********************************************/
+int main(void){
+	moveSteppers_test();
+
+	return 0;
 }

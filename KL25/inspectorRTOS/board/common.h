@@ -3,6 +3,9 @@
 
 #include "MKL25Z4.h"
 #include <stdint.h>
+#include "FreeRTOS.h"
+#include "task.h"
+#include <string.h>
 
 #include "LCD_8BIT.h"
 #include "RGB.h"
@@ -52,5 +55,7 @@ void Keypad_Config(void);
 
 void RGB_Config(void);
 void ErrorHandler(void);
+
+void sendUART(char uart_tx[50]);
 
 #endif // INSPECTOR_COMMON_H
