@@ -49,13 +49,14 @@ void StepperInit(Stepper *step_struct){
 
 // Put this function inside a LOOP to move constantly (note that systicks should be less than millis)
 void RunStepper(Stepper* stepper){
+
 	GPIO_Type* stp_gpio = IdentifyGPIO(stepper->stp_port);
 
 	if(stepper->run == 1){
 		SetPinHigh(stp_gpio, ToBinaryGPIO(stepper->stp_pin));
-		vTaskDelay(40 / portTICK_PERIOD_MS);
+		for(int i=0; i < 5000; i++);
 		SetPinLow(stp_gpio, ToBinaryGPIO(stepper->stp_pin));
-		vTaskDelay(40 / portTICK_PERIOD_MS);
+		for(int i=0; i < 5000; i++);
 	}else{
 		SetPinLow(stp_gpio, ToBinaryGPIO(stepper->stp_pin));
 	}

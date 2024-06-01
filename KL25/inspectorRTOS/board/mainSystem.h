@@ -34,6 +34,7 @@ extern const int keyboardInputPin;
 //////////   Steppers    /////////
 extern Steppers stepperMotors;
 
+extern const int stepsToTarget;
 extern const int stepperQueue_maxLen;
 extern QueueHandle_t stepperXQueue;
 extern QueueHandle_t stepperYQueue;

@@ -1,5 +1,5 @@
 #include "mainSystem.h"
-#include "pathSteppers_test.c"
+#include "printToLCD_test.c"
 
 int main_(void) {
   //////////  Hardware modules init  //////////
@@ -91,7 +91,7 @@ int main_(void) {
  *         		      Main
  ***********************************************/
 int main(void){
-	moveSteppers_test();
+	printToLCD_test();
 
 	return 0;
 }

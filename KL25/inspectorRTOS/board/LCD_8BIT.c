@@ -61,11 +61,11 @@ void LCD8_Config(void) {
   // Get the GPIOS with the port
   SetGPIOs();
 
-  vTaskDelay(20 / portTICK_PERIOD_MS);
+  vTaskDelay(20);
   LCD8_CommandNoWait(0x30);
-  vTaskDelay(5 / portTICK_PERIOD_MS);
+  vTaskDelay(5);
   LCD8_CommandNoWait(0x30);
-  vTaskDelay(1 / portTICK_PERIOD_MS);
+  vTaskDelay(1);
   LCD8_CommandNoWait(0x30);
   /* set 8-bit data, 2-line, 5x7 font */
   LCD8_Command(0x38);
