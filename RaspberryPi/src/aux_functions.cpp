@@ -31,6 +31,11 @@
 #include <opencv2/imgproc.hpp>
 #include <opencv2/opencv.hpp>
 
+#define NUM_IMAGES_CANVAS 65
+#define NUM_ROWS_CANVAS 9 
+#define NUM_COLS_CANVAS 8
+#define SQUARE_SIZE_CANVAS 100
+
 /************************************************
  *              Other aux functions
  ***********************************************/
@@ -44,18 +49,14 @@ bool comparePoints(const cv::Point &a, const cv::Point &b) {
 
 void saveResultsCSV(std::vector<std::pair<std::string, int>> &results,
                     std::string filename) {
-  // Open the output file
   std::ofstream file(filename);
 
-  // Write the header
   file << "ComponentName,InspectionResult" << std::endl;
 
-  // Write each pair to the file
   for (const auto &pair : results) {
     file << pair.first << "," << pair.second << std::endl;
   }
 
-  // Close the file
   file.close();
 }
 
@@ -72,13 +73,13 @@ void searchCommand(std::string command){
   if(system(checkCommand.c_str())) throw NotifyError("Command " + command + " not found in command line.");
 }
 
-int findLastImageNubmer(std::string boardType) {
+int findLastImageNumber(std::string boardType) {
   std::string imgsDirectory;
   int highest_x = 0;
 
   if (boardType == "ELYOS")
     imgsDirectory = "../imgs/ELYOS/eval/";
-  // else if ();
+  // TODO: Add more board to the options
   else
     throw NotifyError("Error occurred while finding last index for taken "
                       "images. Board type not valid.");
@@ -103,11 +104,11 @@ int findLastImageNubmer(std::string boardType) {
  *                Picture taking
  ***********************************************/
 
-std::vector<std::string> takeRowPictures(std::string boardType) {
+std::vector<std::string> takeRowPictures(std::string boardType, const std::string path = "../imgs/ELYOS/eval/",
+                                         const std::string imgExtension = ".jpg") {
   std::vector<std::string> imgPaths;
   std::vector<std::string> filenames;
-  std::string imgExtension = ".jpg";
-  int imgNumber = findLastImageNubmer(boardType);
+  int imgNumber = findLastImageNumber(boardType);
 
   for (int i = 0; i < 3; i++) {
     imgNumber++;
@@ -115,7 +116,7 @@ std::vector<std::string> takeRowPictures(std::string boardType) {
                         std::to_string(imgNumber) + imgExtension);
   }
   for (int i = 0; i < 3; i++) {
-    imgPaths.push_back("../imgs/ELYOS/eval/" + filenames[i]);
+    imgPaths.push_back(path + filenames[i]);
   }
 
   std::cout << filenames[0] << std::endl;
@@ -137,12 +138,12 @@ std::vector<std::string> takeRowPictures(std::string boardType) {
   return filenames;
 }
 
-std::string takePicture(std::string boardType) {
+std::string takePicture(std::string boardType, const std::string path = "../imgs/ELYOS/eval/",
+                        const std::string imgExtension = ".jpg") {
   std::string imgPath;
-  std::string imgExtension = ".jpg";
-  std::string imgNumber = std::to_string(findLastImageNubmer(boardType));
+  std::string imgNumber = std::to_string(findLastImageNumber(boardType));
   std::string filename = boardType + "_" + imgNumber + imgExtension;
-  imgPath = "../imgs/ELYOS/eval/" + filename;
+  imgPath = path + filename;
 
   std::cout << filename << std::endl;
 
@@ -171,33 +172,26 @@ void printResults(
 }
 
 void fillPCBholes(cv::Mat &inputImg) {
-  // Invert the grayscale image
   cv::Mat des = 255 - inputImg;
 
-  // Find contours in the inverted image
   std::vector<std::vector<cv::Point>> contours;
   std::vector<cv::Vec4i> hierarchy;
   cv::findContours(des, contours, hierarchy, cv::RETR_CCOMP,
                    cv::CHAIN_APPROX_SIMPLE);
 
-  // Draw filled contours on the inverted image
   for (int i = 0; i < contours.size(); i++) {
     cv::drawContours(des, contours, i, cv::Scalar(255), -1);
   }
 
-  // Invert the image back to get the final result
   inputImg = des;
 }
 
 void floodMask(cv::Mat &inputImg, int width, int height) {
-  // Calcualte center
   cv::Point center(width / 2, height / 2);
 
-  // Floodfill from point center of image
   cv::Mat im_floodfill = inputImg.clone();
   cv::floodFill(im_floodfill, center, cv::Scalar(255));
 
-  // Invert floodfilled image
   cv::Mat im_floodfill_inv;
   cv::bitwise_not(im_floodfill, im_floodfill_inv);
 }
@@ -205,14 +199,12 @@ void floodMask(cv::Mat &inputImg, int width, int height) {
 void closeMask(cv::Mat &inputImg, int repetitions) {
   int morph_size = 25;
 
-  // Create structuring element
   cv::Mat element = getStructuringElement(
       cv::MORPH_RECT, cv::Size(2 * morph_size + 1, 2 * morph_size + 1),
       cv::Point(morph_size, morph_size));
 
   cv::Mat output;
 
-  // Apply closing operation multiple times
   while (repetitions) {
     cv::morphologyEx(inputImg, output, cv::MORPH_CLOSE, element,
                      cv::Point(-1, -1), 2);
@@ -227,7 +219,6 @@ void closeMask(cv::Mat &inputImg, int repetitions) {
  ***********************************************/
 
 void display_img(cv::Mat &original_img, bool resize, int width, int height) {
-  // Resize if needed
   if (resize) {
     cv::Mat display_original_img;
     cv::resize(original_img, display_original_img, cv::Size(width, height), 0,
@@ -244,7 +235,6 @@ void display_img(cv::Mat &original_img, bool resize, int width, int height) {
 
 void display_imgs(cv::Mat &original_img, cv::Mat &preprocessed_img, bool resize,
                   int width, int height) {
-  // Resize if needed
   if (resize) {
     cv::Mat display_original_img;
     cv::resize(original_img, display_original_img, cv::Size(width, height), 0,
@@ -294,37 +284,32 @@ void printCompBoundBoxes(io::CSVReader<5> &compBoundBox) {
 }
 
 void displayAllCompBoxes(std::vector<cv::Mat> compImgs) {
-  // Resize each small image to fit within a square
-  // Calculate the size of each square based on the number of images
-  int numImages = 65;
-  int numRows = 9; // Adjust the number of rows and columns based on the total
-                   // number of images
-  int numCols = 8;
-  int squareSize = 100; // Size of each square
+  int numImages = NUM_IMAGES_CANVAS; 
+  int numRows = NUM_ROWS_CANVAS;
+  int numCols = NUM_COLS_CANVAS;
+  int squareSize = SQUARE_SIZE_CANVAS;
 
-  // Create a large window to display the grid of images
+  const cv::Scalar whiteBackground(255, 255, 255);
   cv::Mat largeImage(numRows * squareSize, numCols * squareSize, CV_8UC3,
-                     cv::Scalar(255, 255, 255)); // White background
+                     whiteBackground);
 
-  // Place each resized image in its corresponding square within the large
-  // window
   int count = 0;
   for (int i = 0; i < numRows; i++) {
     for (int j = 0; j < numCols; j++) {
       if (count < numImages) {
-        cv::Mat smallImage = compImgs[count]; // Get the next small image
+        cv::Mat smallImage = compImgs[count];
         resize(smallImage, smallImage,
-               cv::Size(squareSize, squareSize)); // Resize the small image
-        cv::Rect roi(j * squareSize, i * squareSize, squareSize,
-                     squareSize); // Define the region of interest
+               cv::Size(squareSize, squareSize));
+
+        cv::Rect regionOfInter(j * squareSize, i * squareSize, squareSize,
+                     squareSize);
         smallImage.copyTo(
-            largeImage(roi)); // Copy the small image to the large image
+            largeImage(regionOfInter));
         count++;
       }
     }
   }
 
-  // Display the grid of images
   cv::imshow("Grid of Images", largeImage);
   cv::waitKey(0);
 }
@@ -332,8 +317,8 @@ void displayAllCompBoxes(std::vector<cv::Mat> compImgs) {
 cv::Mat makeCanvas(std::vector<cv::Mat> &vecMat, int windowHeight, int nRows) {
   int N = vecMat.size();
   nRows = nRows > N ? N : nRows;
-  int edgeThickness = 10;
-  int imagesPerRow = ceil(double(N) / nRows);
+  const int edgeThickness = 10;
+  const int imagesPerRow = ceil(double(N) / nRows);
   int resizeHeight =
       floor(2.0 *
             ((floor(double(windowHeight - edgeThickness) / nRows)) / 2.0)) -
@@ -351,10 +336,12 @@ cv::Mat makeCanvas(std::vector<cv::Mat> &vecMat, int windowHeight, int nRows) {
       if (++i == N)
         break;
     }
+
     if ((thisRowLen + edgeThickness * (imagesPerRow + 1)) > maxRowLength) {
       maxRowLength = thisRowLen + edgeThickness * (imagesPerRow + 1);
     }
   }
+
   int windowWidth = maxRowLength;
   cv::Scalar backgroundColor(204, 52, 244);
   cv::Mat canvasImage(windowHeight, windowWidth, CV_8UC3, backgroundColor);
@@ -362,11 +349,11 @@ cv::Mat makeCanvas(std::vector<cv::Mat> &vecMat, int windowHeight, int nRows) {
   for (int k = 0, i = 0; i < nRows; i++) {
     int y = i * resizeHeight + (i + 1) * edgeThickness;
     int x_end = edgeThickness;
+
     for (int j = 0; j < imagesPerRow && k < N; k++, j++) {
       int x = x_end;
       cv::Rect roi(x, y, resizeWidth[k], resizeHeight);
       cv::Size s = canvasImage(roi).size();
-      // change the number of channels to three
       cv::Mat target_ROI(s, CV_8UC3);
       if (vecMat[k].channels() != canvasImage.channels()) {
         if (vecMat[k].channels() == 1) {

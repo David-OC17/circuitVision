@@ -40,8 +40,6 @@
 std::vector<std::pair<std::string, int>>
 automaticEvaluation(std::string boardType, std::string filename,
                     bool displayResults) {
-  // Generate and verify the paths to the appropriate files to refer and
-  // evaluate
   std::string refImagePath, compBoxesPath, compMaxLightPath;
   std::string evalImagePath = "../imgs/ELYOS/eval/" + filename;
   if (boardType == "ELYOS") {
@@ -49,9 +47,8 @@ automaticEvaluation(std::string boardType, std::string filename,
     compBoxesPath = "../board/ELYOS/ELYOS_component_boxes.csv";
     compMaxLightPath = "../board/ELYOS/ELYOS_component_maxLighting.csv";
   }
-  // else if ()
+  // TODO: Add more PCB options
   else {
-    // Board does not exist
     throw NotifyError("Error occurred during evaluation. Selected board type "
                       "does not exist.");
   }
@@ -98,7 +95,6 @@ automaticEvaluation(std::string boardType, std::string filename,
   cv::bitwise_xor(preprocessed_ref, preprocessed_eval, XOR_result);
   noise_removal(XOR_result);
 
-  // Create and verify path to file with component box delimiters
   io::CSVReader<5> compBoundBoxes(compBoxesPath);
 
   std::vector<cv::Mat> imgBoxes;
@@ -109,7 +105,6 @@ automaticEvaluation(std::string boardType, std::string filename,
 
   io::CSVReader<2> maxLighitingVal(compMaxLightPath);
 
-  // Check if components are missing from their respective bounding boxes
   std::vector<std::pair<std::string, int>> compSearchResults;
   compSearchResults = verifyComponents(imgBoxes, maxLighitingVal);
 
@@ -137,14 +132,14 @@ std::string rowMode(std::string boardType) {
   std::vector<std::string> pictureNames;
   pictureNames = takeRowPictures(boardType);
 
-  // Evaluate each picture
+  std::string pictureName(takePicture(boardType));
+
   std::vector<std::vector<std::pair<std::string, int>>> results;
   for (auto const &name : pictureNames) {
     results.push_back(automaticEvaluation(boardType, name, false));
   }
 
-  // Check for errors in PCB and build confirmation accordingly
-  std::string completionMsg = "Done";
+  std::string completionMsg("Done");
   if (checkResultsPCB(results[0]))
     completionMsg = "_E";
   else
@@ -162,23 +157,17 @@ std::string rowMode(std::string boardType) {
 }
 
 std::string oneMode(std::string boardType) {
-  std::string pictureName;
-  pictureName = takePicture(boardType);
+  std::string pictureName(takePicture(boardType));
 
-  // Evaluate each picture
-  std::vector<std::pair<std::string, int>> result;
-  result = automaticEvaluation(boardType, pictureName, false);
+  std::vector<std::pair<std::string, int>> result(automaticEvaluation(boardType, pictureName, false));
 
-  // Check for errors in PCB and build confirmation accordingly
   std::string completionMsg = "Done";
   if (checkResultsPCB(result))
     completionMsg = "_E";
   else
     completionMsg = "_G";
 
-  completionMsg = completionMsg + "_X_X";
-
-  return completionMsg;
+  return completionMsg + "_X_X";
 }
 
 /************************************************
@@ -186,20 +175,16 @@ std::string oneMode(std::string boardType) {
  ***********************************************/
 
 cv::Mat preprocessImg(cv::Mat inputImg) {
-  // Apply Gaussian blur
   cv::Mat bluredImg;
   cv::GaussianBlur(inputImg, bluredImg, cv::Size(3, 3), 0, cv::BORDER_DEFAULT);
 
-  // Convert to grayscale
   cv::Mat bluredGrayImg;
   cv::cvtColor(bluredImg, bluredGrayImg, cv::COLOR_BGR2GRAY);
 
-  // Apply thresholding
   cv::Mat threshBluredGrayImg;
   cv::threshold(bluredGrayImg, threshBluredGrayImg, 127, 255,
                 cv::THRESH_BINARY_INV);
 
-  // Apply closign morphological operation
   cv::Mat finalImg;
   cv::morphologyEx(threshBluredGrayImg, finalImg, cv::MORPH_CLOSE,
                    cv::getStructuringElement(cv::MORPH_RECT, cv::Size(3, 3)));
@@ -209,31 +194,20 @@ cv::Mat preprocessImg(cv::Mat inputImg) {
 
 cv::Mat correctPerspective(cv::Mat inputImg, std::vector<cv::Point> corners,
                            int width, int height) {
-  // Sort source corners to match destination corners in the transformation
-  // calculation
   std::sort(corners.begin(), corners.end(), comparePoints);
 
-  // Cast points
   std::vector<cv::Point2f> srcCorners = {static_cast<cv::Point2f>(corners[0]),
                                          static_cast<cv::Point2f>(corners[1]),
                                          static_cast<cv::Point2f>(corners[2]),
                                          static_cast<cv::Point2f>(corners[3])};
 
-  // Destination corner
   std::vector<cv::Point2f> dstCorners = {
       cv::Point2f(0, 0), cv::Point2f(width - 1, 0),
       cv::Point2f(width - 1, height - 1), cv::Point2f(0, height - 1)};
 
-  // Calculate transform from set of given corners to window corners (fit to all
-  // the window)
   cv::Mat imgTransform;
   imgTransform = cv::getPerspectiveTransform(srcCorners, dstCorners);
 
-  // std::cout << "imgTransform type: " << imgTransform.type() << std::endl;
-  // std::cout << "imgTransform size: " << imgTransform.rows << "x" <<
-  // imgTransform.cols << std::endl;
-
-  // Apply the transformation
   cv::Size img_size(width, height);
   cv::Mat noPersp(img_size, inputImg.type());
   cv::warpPerspective(inputImg, noPersp, imgTransform, img_size);
@@ -252,7 +226,6 @@ void noise_removal(cv::Mat &XOR_img, int closure_iterations,
   cv::Mat XOR_eroded_img;
   cv::Mat XOR_dialated_img;
 
-  // Apply closure via erossion and dilation
   cv::erode(XOR_img, XOR_eroded_img, closure_kernel, cv::Point(-1, -1),
             ind_operation_iterations);
   cv::dilate(XOR_eroded_img, XOR_dialated_img, closure_kernel,
@@ -281,14 +254,7 @@ std::vector<boxCorners> getBoundingBoxCorners(io::CSVReader<5> &csvData) {
   return corners;
 }
 
-std::vector<cv::Point> findLargestContour(cv::Mat inputImg, bool print) {
-  // Detect the contours in the image
-  std::vector<std::vector<cv::Point>> contours;
-  std::vector<cv::Vec4i> hierarchy;
-  cv::findContours(inputImg, contours, hierarchy, cv::RETR_TREE,
-                   cv::CHAIN_APPROX_SIMPLE);
-
-  // Find the largest contour
+std::pair<int, int> findLargestContourIdx(const std::vector<std::vector<cv::Point>> & contours){
   int largestArea = 0;
   int largestContourIndex = -1;
   for (int i = 0; i < contours.size(); i++) {
@@ -299,46 +265,46 @@ std::vector<cv::Point> findLargestContour(cv::Mat inputImg, bool print) {
     }
   }
 
-  // Approximate the largest contour to a polygon
+  return std::make_pair(largestArea, largestContourIndex);
+}
+
+std::vector<cv::Point> findLargestContour(cv::Mat inputImg, bool print) {
+  std::vector<std::vector<cv::Point>> contours;
+  std::vector<cv::Vec4i> hierarchy;
+  cv::findContours(inputImg, contours, hierarchy, cv::RETR_TREE,
+                   cv::CHAIN_APPROX_SIMPLE);
+  
+  auto [largestArea,largestContourIndex] = findLargestContourIdx(contours);
+
   std::vector<cv::Point> approx;
   cv::approxPolyDP(contours[largestContourIndex], approx,
                    0.01 * cv::arcLength(contours[largestContourIndex], true),
                    true);
 
-  // Check if the polygon has 4 vertices and a sufficiently large area
-  if (approx.size() == 4 && largestArea > 1000) {
-    // Give the coordinates of the corners of the largest rectangle
-    if (print) {
-      std::cout << approx[0] << "\n";
-      std::cout << approx[1] << "\n";
-      std::cout << approx[2] << "\n";
-      std::cout << approx[3] << "\n";
-    }
+  if (print && approx.size() == 4 && largestArea > 1000) {
+    std::cout << approx[0] << "\n";
+    std::cout << approx[1] << "\n";
+    std::cout << approx[2] << "\n";
+    std::cout << approx[3] << "\n";
 
     return approx;
   }
 
   std::cout << "No large rectangle found in the image." << std::endl;
-  std::vector<cv::Point> emptyRet;
-  return emptyRet;
+  return std::vector<cv::Point> {};
 }
 
 cv::Mat getPCBmask(cv::Mat inputImg, std::vector<int> lowerLims,
                    std::vector<int> upperLims) {
-  // Convert to HSV
   cv::Mat hsvImg;
   cv::cvtColor(inputImg, hsvImg, cv::COLOR_BGR2HSV);
 
-  // Define the bound of the color to filter
   cv::Scalar lower_green(lowerLims[0], lowerLims[1], lowerLims[2]);
   cv::Scalar upper_green(upperLims[0], upperLims[1], upperLims[2]);
 
-  // Create mask
   cv::Mat mask;
   cv::inRange(inputImg, lower_green, upper_green, mask);
-  // Repair mask (remove noise and holes)
   closeMask(mask, 7);
-  // display_img(mask, true);
 
   return mask;
 }
@@ -346,7 +312,6 @@ cv::Mat getPCBmask(cv::Mat inputImg, std::vector<int> lowerLims,
 std::vector<cv::Mat> createImgBoxes(cv::Mat inputImg,
                                     io::CSVReader<5> &compBoundBox) {
   std::vector<cv::Mat> boxImages;
-
   std::string comp_name;
   int topLeft_x, topLeft_y, size_x, size_y;
 
@@ -355,7 +320,6 @@ std::vector<cv::Mat> createImgBoxes(cv::Mat inputImg,
     cv::Mat tempClone = inputImg(cv::Range(topLeft_y, topLeft_y + size_y),
                                  cv::Range(topLeft_x, topLeft_x + size_x));
 
-    // Convert to BGR to be able to use countNonZero pixels
     cv::Mat tempClone_RGB;
     cv::cvtColor(tempClone, tempClone_RGB, cv::COLOR_GRAY2BGR);
 
@@ -372,13 +336,11 @@ verifyComponents(std::vector<cv::Mat> &compImgs,
   std::vector<std::pair<std::string, int>> results;
 
   std::string compName;
-  float maxLitPixels; // Max accepted percentage of lit pixels
-  int i = 0;          // Keep count of current component index
+  float maxLitPixels;
+  int i = 0;
 
-  // Verify by calculating average intensity of each binary image and comparing
-  // to the gives max values
   while (maxLighting.read_row(compName, maxLitPixels)) {
-    // Calculate average number of lit pixels
+    // Average number of lit pixels
     int nonZeroPixels = cv::countNonZero(compImgs[i]);
     int totalPixels = compImgs[i].rows * compImgs[i].cols;
     double percentageLitPixels =

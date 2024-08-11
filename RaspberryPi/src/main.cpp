@@ -46,7 +46,6 @@ int main() {
   std::string serialDevice = SERIAL_DEVICE;
   int baudRate = BAUD_RATE;
 
-  // Initialize communication port
   std::pair<int, int> comsInfo = serialComsInit_test(baudRate, serialDevice);
   if (comsInfo.first) {
     throw NotifyError(
@@ -57,7 +56,7 @@ int main() {
 
   while (1) {
     if (serialDataAvail_test(serialPort)) {
-      dataUART = serialGetchar_test(serialPort); // receive character serially
+      dataUART = serialGetchar_test(serialPort);
       std::string completionMsg;
 
       switch (dataUART) {
@@ -73,7 +72,6 @@ int main() {
         throw NotifyError("The received instruction is not valid.");
       }
 
-      // Divide completion message into chars and send
       const char *completionMsg_chars = completionMsg.c_str();
       for (int i = 0; i < strlen(completionMsg_chars); i++) {
         // serialPutchar(serialPort, completionMsg_chars[i]);

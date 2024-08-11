@@ -30,14 +30,14 @@ std::pair<int, int> serialComsInit(int baudRate, std::string serialDevice) {
   int serialPort;
   int errnum = errno;
   if ((serialPort = serialOpen(serialDevice_char, baudRate)) <
-      0) /* open serial port */
+      0)
   {
     std::cerr << "Unable to open serial device: " << std::strerror(errnum)
               << std::endl;
     return std::make_pair(1, 0);
   }
 
-  if (wiringPiSetup() == -1) /* initializes wiringPi setup */
+  if (wiringPiSetup() == -1)
   {
     std::cerr << "Unable to start wiringPi: " << std::strerror(errnum)
               << std::endl;
