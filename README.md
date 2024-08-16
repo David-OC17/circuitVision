@@ -1,62 +1,77 @@
-# circuitVision
+# CircuitVision
+![Image](./imgs/circuitVision_logo_thin.png)
 
-**Disclosure**
-_This project is still in development. Changes are being made almost everyday._
+## Project Overview
 
-This repository contains a project for automatic optical inspection of PCB boards done using a RaspberryPi 4 and KL25 microcontroller. The system is able to automatically take pictures of PCB boards, via the use of a CNC machine, and evaluate if the components of the PCB are correctly placed and present.
+CircuitVision is an automated optical inspection system for PCB (Printed Circuit Board) boards, utilizing a Raspberry Pi 4 and a KL25 microcontroller. The system, integrated with a CNC machine, automates the process of capturing images of PCB boards and evaluating the placement and presence of components.
 
-## General orchestration / user interaction
-### Modes of operation
-The system will provide two modes of operation that the user may choose from by making the selection from the keypad, and seeing its menu on the LCD display.
+## Modes of Operation
 
-The modes of operation are:
-1. Manual configuration and picture taking
-2. Automatic inspection of preconfigured PCB board
+CircuitVision offers two modes of operation, selectable via a keypad with a menu displayed on an LCD:
 
-The _manual configuration_ option allows the user to move the camera, which is mounted on the final actuator of the CNC, via the use of the joystick. The user may also instruct the system to take a picture of what the camera is seeing at that moment, which automatically triggers the system to evaluate for the selected PCB board design.
+1. **Manual Configuration and Picture Taking**  
+   - Allows the user to manually control the camera mounted on the CNC machine using a joystick.
+   - The user can capture images at any moment, triggering an automatic evaluation of the PCB board based on the selected design.
 
-The _automatic inspection_ mode is recommended. This allows the user to inspect up to as many board are know to fit in the test bed. The CNC goes over each of the PCBs, taking a picture of each of them, saving the results, and displaying them to the monitor.
+2. **Automatic Inspection of Preconfigured PCB Boards**  
+   - Recommended mode for inspecting multiple PCB boards.
+   - The CNC machine automatically captures images of all PCB boards in the test bed, saving and displaying the results on a monitor.
 
-## KL25
-The code that runs on the KL25 micontroller corresponds to the interaction or control of the following hardware modules:
-- LCD display
-- Joytick
-- 3 x 3 keypad
-- Stepper motor driver control
-- Communication with Raspberry Pi 4 via UART
 
-In this manner, the KL25 is in charge of the general orchestration of the system, only communicating to the Raspberry Pi 4 when the actual PCB evaluation is needed.
+## KL25 Microcontroller
+
+The KL25 microcontroller manages the interaction and control of the following hardware components:
+
+- **LCD Display**
+- **Joystick**
+- **3x3 Keypad**
+- **Stepper Motor Driver Control**
+- **UART Communication with Raspberry Pi 4**
+
+The KL25 orchestrates the system's operations and communicates with the Raspberry Pi 4 only when PCB evaluation is required.
+
 
 ## Raspberry Pi 4
-The modules that run on the Raspberry Pi 4 correspond to the image processing and evaluation portion of the system. OpenCV in C++ is used for this purpose. These modules provide a way for the user to take pictures of the PCB board being evaluated at the CNC bed, and get back the results to the KL25, which displays them to the LCD. The system may also be configured to show the results to a monitor, using the standard HDMI connection to the Raspberry Pi board.
 
-### How the pipeline of the image automatic optical evaluation works
-The design of this system is based on the work presented on the following papers/surveys:
-- _PCB Defect Detection USING OPENCV with Image Subtraction Method_, by Fa Iq Raihan and Win Ce
-- _Automatic PCB Inspection Algorithms: A Survey_, by Madhav Mogonti and Fikret Ercal
+The Raspberry Pi 4 handles image processing and evaluation using OpenCV in C++. The main tasks include:
 
-The general operations being done for the evaluation are the following:
-1. Take and save the picture
-2. Create a mask to filter the white background
-3. Find the largest contour, which corresponds to the PCB itself
-4. Correct the perspective and enlarge to fit the complete window
-5. Apply a preprocessing step where the image is blurred, edges are found, and it converted to one channel
-6. Apply a XOR operation between the reference and evaluation image
-7. Remove noise from the resulting XOR
-8. Read from a CSV the coordinates corresponding to bounding boxes of the components
-9. Generate a box image for each component
-10. Calculate percentage of lit pixels in the image and compare to allowed maximum
-11. Display and save results
+- Capturing images of the PCB board on the CNC bed.
+- Processing and evaluating the images.
+- Sending results back to the KL25 microcontroller for display on the LCD or monitor (via HDMI).
 
-## Some preview images
-See the following temporary pictures as reference:
+
+### Image Evaluation Pipeline
+
+The automatic optical evaluation process is inspired by the following research papers:
+
+- **PCB Defect Detection Using OpenCV with Image Subtraction Method** by Fa Iq Raihan and Win Ce
+- **Automatic PCB Inspection Algorithms: A Survey** by Madhav Mogonti and Fikret Ercal
+
+The evaluation pipeline involves the following steps:
+
+1. Capture and save the image.
+2. Create a mask to filter the white background.
+3. Identify the largest contour (the PCB itself).
+4. Correct the perspective and resize the image.
+5. Apply preprocessing (blurring, edge detection, conversion to a single channel).
+6. Perform XOR operation between reference and evaluation images.
+7. Remove noise from the XOR result.
+8. Read component bounding box coordinates from a CSV file.
+9. Generate a box image for each component.
+10. Calculate the percentage of lit pixels and compare it to the allowed maximum.
+11. Display and save the results.
+
+
+## Preview Images
+
+Below are some temporary reference images from the project:
 
 <div style="display:flex">
-  <img src="./imgs/ref_PCB_board.png" alt="Image 1" style="width:50%">
-  <img src="./imgs/eval_results.png" alt="Image 2" style="width:50%">
+  <img src="./imgs/ref_PCB_board.png" alt="Reference PCB Board" style="width:50%; margin-right: 10px;">
+  <img src="./imgs/eval_results.png" alt="Evaluation Results" style="width:50%;">
 </div>
 
-<div style="display:flex">
-  <img src="./imgs/stepper_motors.png" alt="Image 1" style="width:50%">
-  <img src="./imgs/CNC_machine.png" alt="Image 2" style="width:50%">
+<div style="display:flex; margin-top: 10px;">
+  <img src="./imgs/stepper_motors.png" alt="Stepper Motors" style="width:50%; margin-right: 10px;">
+  <img src="./imgs/CNC_machine.png" alt="CNC Machine" style="width:50%;">
 </div>
